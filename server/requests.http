@@ -1,0 +1,126 @@
+### Try the API from VS Code with the "REST Client" extension (humao.rest-client):
+### click "Send Request" above each block. Run `npm run dev` first.
+
+@base = http://localhost:3000
+
+### Health
+GET {{base}}/health
+
+### Labels, sizes, categories, pricing rules
+GET {{base}}/meta
+
+### Log in as Wayan (sender)
+# @name senderLogin
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "phone": "081200000001", "password": "kirimin123" }
+
+###
+@sender = {{senderLogin.response.body.token}}
+
+### Log in as Made (driver)
+# @name driverLogin
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "phone": "081200000003", "password": "kirimin123" }
+
+###
+@driver = {{driverLogin.response.body.token}}
+
+### Me
+GET {{base}}/me
+Authorization: Bearer {{sender}}
+
+### S2 — price estimate
+POST {{base}}/matches/estimate
+Authorization: Bearer {{sender}}
+Content-Type: application/json
+
+{ "size": "XS", "pickup": { "lat": -8.6795, "lng": 115.2275 }, "dropoff": { "lat": -8.799, "lng": 115.1735 } }
+
+### S3 — drivers heading the same way
+POST {{base}}/matches/search
+Authorization: Bearer {{sender}}
+Content-Type: application/json
+
+{ "size": "XS", "pickup": { "lat": -8.6795, "lng": 115.2275 }, "dropoff": { "lat": -8.799, "lng": 115.1735 } }
+
+### D6 — Made's routes (copy a trip id from here)
+# @name myTrips
+GET {{base}}/trips/mine
+Authorization: Bearer {{driver}}
+
+###
+@tripId = {{myTrips.response.body.$[0].id}}
+
+### S4 — send a package to Made's trip
+# @name newOrder
+POST {{base}}/orders
+Authorization: Bearer {{sender}}
+Content-Type: application/json
+
+{
+  "category": "Dokumen",
+  "size": "XS",
+  "weightClass": "lt1",
+  "handling": ["keep_dry"],
+  "pickup": { "label": "Jl. Tukad Badung", "lat": -8.6795, "lng": 115.2275 },
+  "dropoff": { "label": "Gedung FT", "lat": -8.799, "lng": 115.1735 },
+  "recipient": { "name": "Dewa", "phone": "081299991111" },
+  "handoverMethod": "meet",
+  "paymentMethod": "cash",
+  "tripId": "{{tripId}}"
+}
+
+###
+@orderId = {{newOrder.response.body.id}}
+@code = {{newOrder.response.body.handoverCode}}
+
+### D3 — Made's inbox
+GET {{base}}/trips/{{tripId}}/requests
+Authorization: Bearer {{driver}}
+
+### D4 — accept
+POST {{base}}/orders/{{orderId}}/accept
+Authorization: Bearer {{driver}}
+Content-Type: application/json
+
+{}
+
+### D5 — start the trip
+POST {{base}}/trips/{{tripId}}/start
+Authorization: Bearer {{driver}}
+
+### Pick up
+POST {{base}}/orders/{{orderId}}/pickup
+Authorization: Bearer {{driver}}
+Content-Type: application/json
+
+{}
+
+### X1 — chat
+POST {{base}}/orders/{{orderId}}/messages
+Authorization: Bearer {{sender}}
+Content-Type: application/json
+
+{ "body": "Sudah jalan ya pak?" }
+
+### X2 — hand over with the recipient's code
+POST {{base}}/orders/{{orderId}}/deliver
+Authorization: Bearer {{driver}}
+Content-Type: application/json
+
+{ "code": "{{code}}" }
+
+### S5/S8 — order with timeline
+GET {{base}}/orders/{{orderId}}
+Authorization: Bearer {{sender}}
+
+### X3 — rate the driver
+POST {{base}}/orders/{{orderId}}/rating
+Authorization: Bearer {{sender}}
+Content-Type: application/json
+
+{ "stars": 5, "tags": ["Tepat waktu"] }

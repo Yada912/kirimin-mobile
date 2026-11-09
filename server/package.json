@@ -1,0 +1,21 @@
+{
+  "name": "@kirimin/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kirimin API — zero-dependency Node.js server (node:http + node:sqlite)",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "dev": "node --watch --disable-warning=ExperimentalWarning src/index.ts",
+    "start": "node --disable-warning=ExperimentalWarning src/index.ts",
+    "db:reset": "node --disable-warning=ExperimentalWarning src/db/reset.ts",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}

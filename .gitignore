@@ -1,0 +1,19 @@
+node_modules/
+.env
+.env.local
+
+# Local database & uploaded photos
+server/data/
+
+# Expo / React Native (for the app/ folder)
+.expo/
+dist/
+web-build/
+*.apk
+*.aab
+android/
+ios/
+
+.DS_Store
+Thumbs.db
+*.log
