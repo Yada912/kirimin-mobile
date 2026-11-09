@@ -10,7 +10,7 @@ The UI follows Hecate's MVP wireframes in [Figma](https://www.figma.com/design/R
 |---|---|
 | **Backend API** (`server/`) | ✅ MVP done: auth & sessions, routes/trips (incl. weekly recurring), matching & pricing, orders end-to-end, chat, ratings, notifications + Expo push, photo uploads, realtime, settings, saved places, KTP verification, problem reports, driver wallet. 20 passing tests. |
 | **Shared domain** (`shared/`) | ✅ Types, labels, matching, pricing and the order state machine, shared by server and app |
-| **Mobile app** (`app/`) | ⏭ Next: Expo (React Native + TypeScript) with a component system and placeholder UI |
+| **Mobile app** (`app/`) | ✅ Complete MVP: Expo SDK 58 (React Native + TypeScript), full component system, design tokens, Kirim S1–S7, Angkut D1–D5, Chat, Handover, and Rating |
 
 ## Repository layout
 
@@ -54,6 +54,14 @@ npm run dev        # http://localhost:3000/health, demo password: kirimin123
 npm test
 ```
 
+### Running the Mobile App
+
+```bash
+cd app
+npm start          # Or npx expo start, then press 'a' for Android emulator
+```
+
+See [docs/APP.md](docs/APP.md) for the component system and architecture.
 See [docs/SETUP-LAPTOP.md](docs/SETUP-LAPTOP.md) for connecting a phone (same Wi-Fi, ngrok or Cloudflare tunnel).
 
 ## How the backend is organised
