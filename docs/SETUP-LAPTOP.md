@@ -22,8 +22,9 @@ npm run dev                          # auto-restarts when you edit code
 You'll see something like this:
 
 ```
-Migrations applied: 001_init.sql
+Migrations applied: 001_init.sql, 002_mvp_features.sql
 Seeded demo data (password for all demo users: kirimin123)
+Published 3 upcoming departure(s) of recurring routes
 
 Kirimin API listening on port 3000
   Laptop:  http://localhost:3000/health
@@ -50,7 +51,9 @@ Stop it with `Ctrl+C`. The data is kept in `server/data/kirimin.db` between runs
 | 081200000004 | Komang A. | driver, route Panjer → Kampus Bukit |
 | 081200000005 | Putu W. | driver, Mobil, route Sanur → Nusa Dua |
 
-Demo trips are created to depart 1–1.5 hours after the database is seeded. If they've gone stale, run `npm run db:reset`.
+Demo trips are created to depart 1–1.5 hours after the database is seeded. They repeat Monday to Friday, so the server keeps publishing the next departures (two days ahead) while it runs. If the demo data still looks stale, run `npm run db:reset`.
+
+**Already have a database from an earlier version?** Just start the server. New migrations are applied automatically, and your data and login tokens are kept.
 
 ### Try it without the app
 

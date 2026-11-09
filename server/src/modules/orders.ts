@@ -33,6 +33,7 @@ import type { UserRow, UsersService } from './users.ts';
 import { toPublicUser } from './users.ts';
 import type { TripOrderHooks, TripRow, TripsService } from './trips.ts';
 import type { NotificationsService } from './notifications.ts';
+import type { WalletService } from './wallet.ts';
 import { evaluateTrip, placeToLatLng } from './tripMatch.ts';
 
 // ─── Rows ───────────────────────────────────────────────────────────────────
@@ -122,6 +123,7 @@ export function ordersService(
   users: UsersService,
   trips: TripsService,
   notifications: NotificationsService,
+  wallet: WalletService,
 ) {
   const tripRepo = trips.repo;
 
@@ -413,9 +415,14 @@ export function ordersService(
       if (!['open', 'requested', 'declined', 'accepted'].includes(order.status)) {
         throw conflict('Paket sudah dijemput. Gunakan "Laporkan masalah" untuk sengketa.');
       }
-      const updated = await db.transaction((tx) =>
-        move(tx, order, 'cancelled', 'sender', senderId, { ...refundPatch(order), cancel_reason: reason }, reason),
-      );
+      const updated = await db.transaction(async (tx) => {
+        const o = await move(tx, order, 'cancelled', 'sender', senderId, { ...refundPatch(order), cancel_reason: reason }, reason);
+        // The part of a paid order that isn't refunded compensates the driver (S7).
+        if (order.driver_id && order.total && order.payment_status === 'paid') {
+          await wallet.credit(tx, order.driver_id, order.id, 'compensation', order.total - o.refund_amount, `Kompensasi ${order.code}`);
+        }
+        return o;
+      });
       if (order.driver_id) {
         await notifications.notify(order.driver_id, 'order.cancelled', 'Titipan dibatalkan', `${order.code}: ${reason}`, { orderId });
       }
@@ -431,7 +438,13 @@ export function ordersService(
       if (order.payment_status !== 'unpaid') throw conflict('Pesanan ini sudah dibayar');
       if (['cancelled', 'expired'].includes(order.status)) throw conflict('Pesanan sudah tidak aktif');
       if (!order.total) throw conflict('Harga belum ditentukan, tunggu driver menerima');
-      await db.run(`UPDATE orders SET payment_method = ?, payment_status = 'paid', updated_at = ? WHERE id = ?`, [method, nowIso(), orderId]);
+      await db.transaction(async (tx) => {
+        await tx.run(`UPDATE orders SET payment_method = ?, payment_status = 'paid', updated_at = ? WHERE id = ?`, [method, nowIso(), orderId]);
+        // Paid after delivery: the driver's earning is booked now.
+        if (order.status === 'delivered' && order.driver_id && order.fee) {
+          await wallet.credit(tx, order.driver_id, order.id, method === 'cash' ? 'cash_earning' : 'earning', order.fee, `Titipan ${order.code}`);
+        }
+      });
       const updated = await requireRow(orderId);
       await broadcast(updated);
       return toOne(updated, senderId);
@@ -480,6 +493,9 @@ export function ordersService(
         o = await move(tx, o, 'delivered', 'driver', driverId, { delivery_photo_url: body.photoUrl ?? null, ...(o.payment_status === 'unpaid' ? payment : {}) });
         await tx.run('UPDATE users SET deliveries_count = deliveries_count + 1 WHERE id = ?', [driverId]);
         await tx.run('UPDATE users SET sends_count = sends_count + 1 WHERE id = ?', [o.sender_id]);
+        if (o.payment_status === 'paid' && o.fee) {
+          await wallet.credit(tx, driverId, o.id, o.payment_method === 'cash' ? 'cash_earning' : 'earning', o.fee, `Titipan ${o.code}`);
+        }
         return o;
       });
       await notifications.notify(order.sender_id, 'order.delivered', 'Paket sudah diterima',

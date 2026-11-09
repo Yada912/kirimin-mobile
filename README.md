@@ -8,7 +8,7 @@ The UI follows Hecate's MVP wireframes in [Figma](https://www.figma.com/design/R
 
 | Part | State |
 |---|---|
-| **Backend API** (`server/`) | ✅ MVP done: auth, routes/trips, matching & pricing, orders end-to-end, chat, ratings, notifications, photo uploads, realtime. 11 passing tests. |
+| **Backend API** (`server/`) | ✅ MVP done: auth & sessions, routes/trips (incl. weekly recurring), matching & pricing, orders end-to-end, chat, ratings, notifications + Expo push, photo uploads, realtime, settings, saved places, KTP verification, problem reports, driver wallet. 20 passing tests. |
 | **Shared domain** (`shared/`) | ✅ Types, labels, matching, pricing and the order state machine, shared by server and app |
 | **Mobile app** (`app/`) | ⏭ Next: Expo (React Native + TypeScript) with a component system and placeholder UI |
 
@@ -32,7 +32,9 @@ kirimin-mobile/
 │   │   ├── db/            SQLite adapter, migrations/, seed (Denpasar ↔ Bukit demo data)
 │   │   ├── realtime/      Server-Sent Events hub
 │   │   ├── storage/       Photo storage (local disk now, Cloudinary later)
-│   │   └── modules/       One file per feature: users, trips, orders, matches, chat, notifications
+│   │   ├── push/          Expo push notifications (plain fetch)
+│   │   └── modules/       One file per feature: users, trips, orders, matches, chat, notifications,
+│   │                      places, reports, wallet
 │   ├── test/              Unit tests + full end-to-end flow test
 │   └── requests.http      Click-to-run API walkthrough (VS Code REST Client)
 ├── docs/
@@ -82,11 +84,12 @@ Rules worth knowing before you change anything:
 | Row | Screens | Backend |
 |---|---|---|
 | 0 · Mulai & Beranda | O1 login, O2 pilih peran, O3 beranda, O4 aktivitas, O5 notifikasi | ✅ |
-| 1 · Angkut | D1–D2 buat rute, D3 permintaan, D4 detail, D5 perjalanan aktif, D6 rute saya, D7 edit, D8 batalkan, D9 riwayat | ✅ (recurring schedules stored, not auto-generated yet) |
+| 1 · Angkut | D1–D2 buat rute, D3 permintaan, D4 detail, D5 perjalanan aktif, D6 rute saya, D7 edit, D8 batalkan, D9 riwayat | ✅ incl. weekly recurring routes |
 | 2 · Kirim | S1–S5 detail → jemput/antar → driver searah → konfirmasi → lacak, S6 permintaan terbuka, S7 batal & refund, S8 struk | ✅ |
-| 3 · Shared | X1 chat, X2 serah terima (4-digit code + photo), X3 rating | ✅ (X4 verifikasi: flag only) |
-| 6–7 · Pembayaran | P1–P12 | 🟡 mocked (`/orders/:id/pay`), simple earnings in `/me/stats` |
+| 3 · Shared | X1 chat, X2 serah terima (4-digit code + photo), X3 rating, X4 verifikasi KTP | ✅ (X4 auto-approved until there's an admin panel) |
+| 6–7 · Pembayaran | P1–P12 | 🟡 payments mocked (`/orders/:id/pay`). Driver wallet ledger is real: earnings, cash, compensation, balance. Withdrawals are mocked. |
 | 8 · States | loading / empty / error / location permission | App side |
 | 4, 5, 9, 10 · Dropship, Transfer, Bus, Bus driver | | ⏭ later |
-| S9 / D10 · Laporkan masalah | | ⏭ later |
-| 11–12 · Pengaturan | ST1–ST19 | 🟡 profile edit only |
+| S9 / D10 · Laporkan masalah | | ✅ stored for follow-up (no admin panel yet) |
+| 11–12 · Pengaturan | ST1–ST19 | ✅ profile, password, logout-all, notification toggles, saved addresses, delete account |
+| Push notifications | | ✅ Expo push for every notification + chat, per-channel mute |

@@ -1,5 +1,6 @@
 import type { LatLng, PackageSize, Place, Trip, TripStatus, VehicleType } from '../../../shared/src/index.ts';
 import { PACKAGE_SIZES, VEHICLE_SPEED_KMH, VEHICLE_TYPES, minutesFor, pathKm } from '../../../shared/src/index.ts';
+import { config } from '../config.ts';
 import type { Db } from '../db/database.ts';
 import type { Hub } from '../realtime/hub.ts';
 import { Router } from '../http/router.ts';
@@ -33,9 +34,12 @@ export interface TripRow {
   last_lat: number | null;
   last_lng: number | null;
   last_location_at: string | null;
+  series_id: string;
   created_at: string;
   updated_at: string;
 }
+
+const DAY_MS = 86_400_000;
 
 /** Statuses that occupy one of a trip's package slots. */
 export const SLOT_STATUSES = ['accepted', 'picked_up', 'in_transit', 'arrived', 'delivered'];
@@ -119,7 +123,10 @@ const tripFields = {
 };
 
 const createBody = v.object(tripFields);
+/** "this" = only this departure; "series" = also every upcoming departure of the same weekly route. */
+const scopeField = v.default(v.enum(['this', 'series'] as const), 'this');
 const updateBody = v.object({
+  scope: scopeField,
   name: v.optional(tripFields.name),
   stops: v.optional(v.array(shapes.place, { max: 8 })),
   departAt: v.optional(v.datetime()),
@@ -158,6 +165,72 @@ export function tripsService(db: Db, hub: Hub, users: UsersService, hooks: () =>
     return t;
   }
 
+  /**
+   * Publishes the upcoming departures of a weekly route, copying `latest` (the
+   * newest departure of the series) onto each matching weekday in the horizon.
+   * Idempotent thanks to the unique (series_id, depart_at) index.
+   */
+  async function extendSeries(latest: TripRow, now = new Date()): Promise<number> {
+    const days = parseJson<number[]>(latest.repeat_days_json, []);
+    if (days.length === 0) return 0;
+    const base = new Date(latest.depart_at).getTime();
+    const duration = new Date(latest.arrive_at).getTime() - base;
+    const until = now.getTime() + config.recurringHorizonDays * DAY_MS;
+    const offset = config.tzOffsetMinutes * 60_000;
+    let created = 0;
+    // Same local time every day; skip days already in the past (e.g. the server was off for a while).
+    for (let k = Math.max(1, Math.ceil((now.getTime() - base) / DAY_MS)); base + k * DAY_MS <= until; k++) {
+      const depart = base + k * DAY_MS;
+      if (!days.includes(new Date(depart + offset).getUTCDay())) continue;
+      const stamp = new Date().toISOString();
+      const row: TripRow = {
+        ...latest,
+        id: newId(),
+        depart_at: new Date(depart).toISOString(),
+        arrive_at: new Date(depart + duration).toISOString(),
+        status: 'published',
+        last_lat: null,
+        last_lng: null,
+        last_location_at: null,
+        created_at: stamp,
+        updated_at: stamp,
+      };
+      const cols = Object.keys(row);
+      const res = await db.run(
+        `INSERT OR IGNORE INTO trips (${cols.join(',')}) VALUES (${cols.map(() => '?').join(',')})`,
+        Object.values(row) as (string | number | null)[],
+      );
+      created += res.changes;
+    }
+    return created;
+  }
+
+  async function extendSeriesOf(seriesId: string) {
+    const latest = await db.get<TripRow>('SELECT * FROM trips WHERE series_id = ? ORDER BY depart_at DESC LIMIT 1', [seriesId]);
+    return latest ? extendSeries(latest) : 0;
+  }
+
+  /** Upcoming, still-editable departures of the same weekly route (excluding `t`). */
+  function upcomingInSeries(t: TripRow) {
+    return db.all<TripRow>(
+      `SELECT * FROM trips WHERE series_id = ? AND id <> ? AND status = 'published' AND depart_at > ? ORDER BY depart_at`,
+      [t.series_id, t.id, nowIso()],
+    );
+  }
+
+  async function cancelOne(t: TripRow, reason: string) {
+    if (t.status !== 'published' && t.status !== 'ongoing') throw conflict('Rute ini sudah selesai');
+    const carrying = await db.get<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM orders WHERE trip_id = ? AND status IN ('picked_up','in_transit','arrived')`,
+      [t.id],
+    );
+    if ((carrying?.n ?? 0) > 0) throw conflict('Antar dulu paket yang sudah dijemput sebelum membatalkan');
+    await repo.update(t.id, { status: 'cancelled' });
+    const updated = (await repo.byId(t.id))!;
+    await hooks().onTripClosed(updated, reason);
+    return updated;
+  }
+
   return {
     repo,
     toDto,
@@ -177,8 +250,9 @@ export function tripsService(db: Db, hub: Hub, users: UsersService, hooks: () =>
       if (arriveAt <= body.departAt) throw badRequest('Waktu tiba harus setelah waktu berangkat', { field: 'arriveAt' });
 
       const now = nowIso();
+      const id = newId();
       const row: TripRow = {
-        id: newId(),
+        id,
         driver_id: driverId,
         name: body.name,
         origin_json: JSON.stringify(body.origin),
@@ -199,11 +273,29 @@ export function tripsService(db: Db, hub: Hub, users: UsersService, hooks: () =>
         last_lat: null,
         last_lng: null,
         last_location_at: null,
+        series_id: id,
         created_at: now,
         updated_at: now,
       };
       await repo.insert(row);
+      // Publish the next departures of a weekly route right away.
+      await extendSeries(row);
       return toDto(row, 0);
+    },
+
+    /**
+     * Background job (hourly + at start-up): keeps every weekly route published
+     * `RECURRING_HORIZON_DAYS` ahead, so senders can find tomorrow's commute today.
+     */
+    async generateRecurring(now = new Date()): Promise<number> {
+      const latest = await db.all<TripRow>(
+        `SELECT t.* FROM trips t
+          WHERE t.repeat_days_json <> '[]'
+            AND t.depart_at = (SELECT MAX(depart_at) FROM trips WHERE series_id = t.series_id)`,
+      );
+      let created = 0;
+      for (const t of latest) created += await extendSeries(t, now);
+      return created;
     },
 
     /** D6 "Rute Saya". scope: active (published/ongoing) | history. */
@@ -237,19 +329,41 @@ export function tripsService(db: Db, hub: Hub, users: UsersService, hooks: () =>
       }
       const band = body.priceBand;
       if (band && band.min > band.max) throw badRequest('Harga minimum lebih besar dari maksimum');
-      await repo.update(tripId, {
+      const departAt = body.departAt ?? t.depart_at;
+      const arriveAt = body.arriveAt ?? (body.departAt ? addMinutes(body.departAt, (Date.parse(t.arrive_at) - Date.parse(t.depart_at)) / 60_000) : t.arrive_at);
+      if (arriveAt <= departAt) throw badRequest('Waktu tiba harus setelah waktu berangkat', { field: 'arriveAt' });
+      if (departAt !== t.depart_at) {
+        const clash = await db.get('SELECT 1 FROM trips WHERE series_id = ? AND depart_at = ? AND id <> ?', [t.series_id, departAt, tripId]);
+        if (clash) throw conflict('Sudah ada keberangkatan rute ini di waktu tersebut');
+      }
+      // Settings that may be copied to the rest of a weekly route.
+      const settings: Partial<TripRow> = {
         name: body.name,
-        stops_json: body.stops ? JSON.stringify(body.stops) : undefined,
-        depart_at: body.departAt,
-        arrive_at: body.arriveAt,
-        repeat_days_json: body.repeatDays ? JSON.stringify(body.repeatDays) : undefined,
         accepted_sizes_json: body.acceptedSizes ? JSON.stringify(body.acceptedSizes) : undefined,
         max_packages: body.maxPackages,
         max_weight_kg: body.maxWeightKg,
         max_detour_km: body.maxDetourKm,
         price_min: band === null ? null : band?.min,
         price_max: band === null ? null : band?.max,
+      };
+      await repo.update(tripId, {
+        ...settings,
+        stops_json: body.stops ? JSON.stringify(body.stops) : undefined,
+        depart_at: body.departAt ? departAt : undefined,
+        arrive_at: body.departAt || body.arriveAt ? arriveAt : undefined,
       });
+      if (body.scope === 'series') {
+        for (const other of await upcomingInSeries(t)) {
+          // Never shrink a departure below the packages it already accepted.
+          const fits = body.maxPackages === undefined || body.maxPackages >= (await repo.slotsUsed(other.id));
+          await repo.update(other.id, fits ? settings : { ...settings, max_packages: undefined });
+        }
+      }
+      // The weekly schedule belongs to the whole route, whatever the scope.
+      if (body.repeatDays) {
+        await db.run('UPDATE trips SET repeat_days_json = ?, updated_at = ? WHERE series_id = ?', [JSON.stringify(body.repeatDays), nowIso(), t.series_id]);
+        await extendSeriesOf(t.series_id);
+      }
       return toDto((await repo.byId(tripId))!);
     },
 
@@ -273,20 +387,24 @@ export function tripsService(db: Db, hub: Hub, users: UsersService, hooks: () =>
       return toDto(updated);
     },
 
-    /** D8. Accepted-but-not-picked-up packages go back to the open pool; senders are notified. */
+    /**
+     * D8. Accepted-but-not-picked-up packages go back to the open pool; senders are notified.
+     * `scope: "series"` also cancels the upcoming departures and stops the weekly schedule.
+     */
     async cancel(driverId: string, tripId: string, input: unknown) {
-      const { reason } = parse(input, v.object({ reason: v.default(v.string({ max: 200 }), 'Driver membatalkan perjalanan') }));
+      const { reason, scope } = parse(input, v.object({
+        reason: v.default(v.string({ max: 200 }), 'Driver membatalkan perjalanan'),
+        scope: scopeField,
+      }));
       const t = await ownTrip(tripId, driverId);
-      if (t.status !== 'published' && t.status !== 'ongoing') throw conflict('Rute ini sudah selesai');
-      const carrying = await db.get<{ n: number }>(
-        `SELECT COUNT(*) AS n FROM orders WHERE trip_id = ? AND status IN ('picked_up','in_transit','arrived')`,
-        [tripId],
-      );
-      if ((carrying?.n ?? 0) > 0) throw conflict('Antar dulu paket yang sudah dijemput sebelum membatalkan');
-      await repo.update(tripId, { status: 'cancelled' });
-      const updated = (await repo.byId(tripId))!;
-      await hooks().onTripClosed(updated, reason);
-      return toDto(updated);
+      const updated = await cancelOne(t, reason);
+      if (scope === 'series') {
+        await db.run(`UPDATE trips SET repeat_days_json = '[]', updated_at = ? WHERE series_id = ?`, [nowIso(), t.series_id]);
+        for (const other of await upcomingInSeries(t)) {
+          await cancelOne(other, reason).catch(() => undefined); // one carrying packages stays; the driver finishes it
+        }
+      }
+      return toDto((await repo.byId(updated.id))!);
     },
 
     /** Driver app posts GPS every ~10 s while a trip is ongoing; senders see it on S5. */
@@ -325,6 +443,7 @@ export function toTripDto(t: TripRow, driver: Trip['driver'] | null, slotsUsed: 
     maxDetourKm: t.max_detour_km,
     priceBand: t.price_min !== null && t.price_max !== null ? { min: t.price_min, max: t.price_max } : null,
     status: t.status,
+    seriesId: t.series_id,
     slotsUsed,
     lastLocation:
       t.last_lat !== null && t.last_lng !== null && t.last_location_at

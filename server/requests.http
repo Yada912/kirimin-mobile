@@ -124,3 +124,52 @@ Authorization: Bearer {{sender}}
 Content-Type: application/json
 
 { "stars": 5, "tags": ["Tepat waktu"] }
+
+### ─── MVP round 2 ───────────────────────────────────────────
+
+### Notification preferences (ST): mute promos
+PATCH {{base}}/me/settings
+Authorization: Bearer {{sender}}
+Content-Type: application/json
+
+{ "push": { "promos": false } }
+
+### Register an Expo push token (the app does this after login)
+POST {{base}}/me/push-tokens
+Authorization: Bearer {{sender}}
+Content-Type: application/json
+
+{ "token": "ExponentPushToken[replace-with-a-real-one]", "platform": "android" }
+
+### Saved address
+POST {{base}}/me/places
+Authorization: Bearer {{sender}}
+Content-Type: application/json
+
+{ "kind": "home", "label": "Rumah", "address": "Jl. Tukad Badung No. 12, Renon", "lat": -8.6795, "lng": 115.2275 }
+
+### List saved addresses
+GET {{base}}/me/places
+Authorization: Bearer {{sender}}
+
+### KTP verification (X4); upload both photos with POST /uploads first
+POST {{base}}/me/verification
+Authorization: Bearer {{sender}}
+Content-Type: application/json
+
+{ "ktpPhotoUrl": "/uploads/ktp.jpg", "selfiePhotoUrl": "/uploads/selfie.jpg" }
+
+### Driver wallet (P10)
+GET {{base}}/wallet
+Authorization: Bearer {{driver}}
+
+### Withdraw (P11–P12, mocked)
+POST {{base}}/wallet/withdraw
+Authorization: Bearer {{driver}}
+Content-Type: application/json
+
+{ "amount": 10000, "method": "ewallet", "provider": "DANA", "accountNumber": "081200000003", "accountName": "Made S." }
+
+### My problem reports (S9/D10). File one with POST /orders/:id/reports
+GET {{base}}/me/reports
+Authorization: Bearer {{sender}}

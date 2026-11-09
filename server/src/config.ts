@@ -34,6 +34,19 @@ export const config = {
   /** Seed demo users/trips on first start when the database is empty. */
   seedOnEmpty: (env.SEED_ON_EMPTY ?? 'true') === 'true',
   logRequests: (env.LOG_REQUESTS ?? 'true') === 'true',
+  /** Local time zone as a UTC offset, used to decide which weekday a recurring trip falls on. Bali (WITA) = 480. */
+  tzOffsetMinutes: Number(env.TZ_OFFSET_MINUTES ?? 480),
+  /** How many days ahead recurring routes are published as individual trips. */
+  recurringHorizonDays: Number(env.RECURRING_HORIZON_DAYS ?? 2),
+  /** Send Expo push notifications to registered devices. */
+  pushEnabled: (env.PUSH_ENABLED ?? 'true') === 'true',
+  /** Only needed if "Enhanced push security" is on in your Expo project. */
+  expoAccessToken: env.EXPO_ACCESS_TOKEN || null,
+  /**
+   * There is no admin panel yet, so KTP submissions (X4) are approved straight away
+   * for demos. Set to false to keep them "pending" until reviewed in the database.
+   */
+  autoApproveVerification: (env.AUTO_APPROVE_VERIFICATION ?? 'true') === 'true',
 };
 
 if (isProd && config.jwtSecret === DEV_SECRET) {
