@@ -64,9 +64,9 @@ export async function seed(db: Db) {
       const vehicle = 'vehicle' in u ? u.vehicle : null;
       const [rs, rc, dc, sc] = stats[key];
       await tx.run(
-        `INSERT INTO users (id, name, phone, email, password_hash, avatar_url, active_role, verified, vehicle_type, vehicle_plate,
-           rating_sum, rating_count, deliveries_count, sends_count, created_at, updated_at)
-         VALUES (?, ?, ?, NULL, ?, NULL, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO users (id, name, phone, email, password_hash, avatar_url, active_role, verified, verification_status,
+           vehicle_type, vehicle_plate, rating_sum, rating_count, deliveries_count, sends_count, created_at, updated_at)
+         VALUES (?, ?, ?, NULL, ?, NULL, ?, 1, 'verified', ?, ?, ?, ?, ?, ?, ?, ?)`,
         [id, u.name, u.phone, hash, u.role, vehicle?.[0] ?? null, vehicle?.[1] ?? null, rs, rc, dc, sc, now, now],
       );
     }
@@ -86,12 +86,13 @@ export async function seed(db: Db) {
       const u = DEMO_USERS[driver];
       const vehicle = 'vehicle' in u ? u.vehicle : ['motor', '-'];
       const depart = addMinutes(now, departInMin);
+      const id = newId();
       await tx.run(
-        `INSERT INTO trips (id, driver_id, name, origin_json, stops_json, destination_json, depart_at, arrive_at, repeat_days_json,
+        `INSERT INTO trips (id, series_id, driver_id, name, origin_json, stops_json, destination_json, depart_at, arrive_at, repeat_days_json,
            vehicle_type, vehicle_plate, accepted_sizes_json, max_packages, max_weight_kg, max_detour_km, price_min, price_max,
            status, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, NULL, NULL, 'published', ?, ?)`,
-        [newId(), ids[driver], name, JSON.stringify(origin), JSON.stringify(stops), JSON.stringify(dest), depart,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, NULL, NULL, 'published', ?, ?)`,
+        [id, id, ids[driver], name, JSON.stringify(origin), JSON.stringify(stops), JSON.stringify(dest), depart,
           addMinutes(depart, durationMin), JSON.stringify([1, 2, 3, 4, 5]), vehicle[0], vehicle[1], JSON.stringify(sizes),
           maxPackages, maxDetourKm, now, now],
       );

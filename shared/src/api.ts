@@ -11,10 +11,17 @@ import type {
   PackageSize,
   PaymentMethod,
   PaymentStatus,
+  NotificationChannel,
+  PayoutMethod,
   Place,
+  ReportCategory,
+  ReportStatus,
   Role,
+  SavedPlaceKind,
   TripStatus,
   VehicleType,
+  VerificationStatus,
+  WalletEntryType,
   WeightClass,
 } from './domain.ts';
 import type { MatchKind } from './matching.ts';
@@ -41,11 +48,28 @@ export interface PublicUser {
   vehicle: Vehicle | null;
 }
 
+/** Per-user preferences (ST screens). */
+export interface UserSettings {
+  /** Push notifications per channel; in-app notifications (O5) are always stored. */
+  push: Record<NotificationChannel, boolean>;
+}
+
 /** The signed-in user (GET /me). */
 export interface Me extends PublicUser {
   phone: string;
   email: string | null;
   activeRole: Role;
+  verificationStatus: VerificationStatus;
+  /** Reason shown when verification was rejected. */
+  verificationNote: string | null;
+  settings: UserSettings;
+  createdAt: string;
+}
+
+/** "Alamat tersimpan". */
+export interface SavedPlace extends Place {
+  id: string;
+  kind: SavedPlaceKind;
   createdAt: string;
 }
 
@@ -77,6 +101,8 @@ export interface Trip {
   maxDetourKm: number;
   priceBand: PriceBand | null; // null = "Harga otomatis"
   status: TripStatus;
+  /** Shared by every occurrence of a weekly schedule; equals `id` for one-off trips. */
+  seriesId: string;
   slotsUsed: number;
   lastLocation: { lat: number; lng: number; at: string } | null;
   createdAt: string;
@@ -184,3 +210,41 @@ export type RealtimeEvent =
   | { type: 'message.created'; message: ChatMessage }
   | { type: 'notification.created'; notification: Notification }
   | { type: 'trip.location'; tripId: string; lat: number; lng: number; at: string };
+
+/** S9 / D10 "Laporkan masalah". */
+export interface Report {
+  id: string;
+  orderId: string;
+  orderCode: string;
+  reporterId: string;
+  category: ReportCategory;
+  description: string;
+  photoUrl: string | null;
+  status: ReportStatus;
+  createdAt: string;
+}
+
+export interface WalletEntry {
+  id: string;
+  type: WalletEntryType;
+  /** Signed: withdrawals are negative. */
+  amount: number;
+  status: 'completed' | 'processing' | 'failed';
+  orderId: string | null;
+  orderCode: string | null;
+  note: string | null;
+  payout: { method: PayoutMethod; provider: string; accountNumber: string; accountName: string } | null;
+  createdAt: string;
+}
+
+/** GET /wallet (P10 "Pendapatan"). */
+export interface WalletSummary {
+  /** Withdrawable: non-cash earnings + compensation − withdrawals. */
+  balance: number;
+  /** Fees the driver already received in cash (not withdrawable). */
+  cashCollected: number;
+  totalEarned: number;
+  earnedLast7Days: number;
+  totalWithdrawn: number;
+  entries: WalletEntry[];
+}

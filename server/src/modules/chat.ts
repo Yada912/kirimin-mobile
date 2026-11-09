@@ -7,6 +7,7 @@ import { parse, v } from '../http/validate.ts';
 import { newId, nowIso, parseJson } from '../lib/util.ts';
 import type { OrdersService } from './orders.ts';
 import type { UsersService } from './users.ts';
+import type { NotificationsService } from './notifications.ts';
 
 /**
  * Chat (X1) and ratings (X3): both hang off an order and only its sender and
@@ -31,7 +32,7 @@ const toMessage = (m: MessageRow): ChatMessage => ({
   readAt: m.read_at,
 });
 
-export function chatService(db: Db, hub: Hub, orders: OrdersService, users: UsersService) {
+export function chatService(db: Db, hub: Hub, orders: OrdersService, users: UsersService, notifications: NotificationsService) {
   async function participants(orderId: string, userId: string) {
     const o = await orders.requireViewable(orderId, userId);
     if (o.sender_id !== userId && o.driver_id !== userId) throw forbidden('Chat hanya untuk pengirim dan driver pesanan ini');
@@ -58,6 +59,12 @@ export function chatService(db: Db, hub: Hub, orders: OrdersService, users: User
       ]);
       const message = toMessage(row);
       hub.publish([o.sender_id, o.driver_id], { type: 'message.created', message });
+      // Phone push only (chat messages don't go into the O5 notification list).
+      const me = await users.requireUser(userId);
+      const recipient = userId === o.sender_id ? o.driver_id : o.sender_id;
+      await notifications.sendPush(recipient, 'chat', `${me.name} · ${o.code}`, body.length > 120 ? body.slice(0, 117) + '…' : body, {
+        type: 'chat.message', orderId,
+      });
       return message;
     },
 

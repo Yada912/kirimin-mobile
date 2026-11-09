@@ -1,11 +1,12 @@
-import type { Me, PublicUser, Role, VehicleType } from '../../../shared/src/index.ts';
-import { ROLES, VEHICLE_TYPES } from '../../../shared/src/index.ts';
+import type { Me, PublicUser, Role, UserSettings, VehicleType, VerificationStatus } from '../../../shared/src/index.ts';
+import { NOTIFICATION_CHANNELS, ROLES, VEHICLE_TYPES } from '../../../shared/src/index.ts';
+import { config } from '../config.ts';
 import type { Db } from '../db/database.ts';
 import { Router } from '../http/router.ts';
-import { conflict, notFound, unauthorized } from '../http/errors.ts';
+import { badRequest, conflict, notFound, unauthorized } from '../http/errors.ts';
 import { parse, shapes, v } from '../http/validate.ts';
 import { hashPassword, issueToken, verifyPassword } from '../auth/tokens.ts';
-import { newId, nowIso } from '../lib/util.ts';
+import { newId, nowIso, parseJson } from '../lib/util.ts';
 
 // ─── Rows & serialisers ─────────────────────────────────────────────────────
 
@@ -24,14 +25,31 @@ export interface UserRow {
   rating_count: number;
   deliveries_count: number;
   sends_count: number;
+  token_version: number;
+  settings_json: string;
+  verification_status: VerificationStatus;
+  ktp_photo_url: string | null;
+  selfie_photo_url: string | null;
+  verification_note: string | null;
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+const DEFAULT_SETTINGS: UserSettings = {
+  push: Object.fromEntries(NOTIFICATION_CHANNELS.map((c) => [c, true])) as UserSettings['push'],
+};
+
+/** Stored settings merged over the defaults, so new toggles default to "on". */
+export function readSettings(json: string | null | undefined): UserSettings {
+  const stored = parseJson<Partial<UserSettings>>(json, {});
+  return { push: { ...DEFAULT_SETTINGS.push, ...(stored.push ?? {}) } };
 }
 
 export function toPublicUser(u: UserRow): PublicUser {
   return {
     id: u.id,
-    name: u.name,
+    name: u.deleted_at ? 'Akun dihapus' : u.name,
     avatarUrl: u.avatar_url,
     ratingAvg: u.rating_count > 0 ? Math.round((u.rating_sum / u.rating_count) * 10) / 10 : null,
     ratingCount: u.rating_count,
@@ -43,7 +61,16 @@ export function toPublicUser(u: UserRow): PublicUser {
 }
 
 export function toMe(u: UserRow): Me {
-  return { ...toPublicUser(u), phone: u.phone, email: u.email, activeRole: u.active_role, createdAt: u.created_at };
+  return {
+    ...toPublicUser(u),
+    phone: u.phone,
+    email: u.email,
+    activeRole: u.active_role,
+    verificationStatus: u.verification_status,
+    verificationNote: u.verification_note,
+    settings: readSettings(u.settings_json),
+    createdAt: u.created_at,
+  };
 }
 
 /** Normalises Indonesian phone numbers so "0812…", "+62812…" and "62812…" are the same account. */
@@ -65,7 +92,8 @@ export function usersRepo(db: Db) {
       const rows = await db.all<UserRow>(`SELECT * FROM users WHERE id IN (${unique.map(() => '?').join(',')})`, unique);
       return new Map(rows.map((r) => [r.id, r]));
     },
-    async insert(u: Omit<UserRow, 'rating_sum' | 'rating_count' | 'deliveries_count' | 'sends_count'>) {
+    async insert(u: Pick<UserRow, 'id' | 'name' | 'phone' | 'email' | 'password_hash' | 'avatar_url' | 'active_role' | 'verified'
+      | 'vehicle_type' | 'vehicle_plate' | 'created_at' | 'updated_at'>) {
       await db.run(
         `INSERT INTO users (id, name, phone, email, password_hash, avatar_url, active_role, verified,
            vehicle_type, vehicle_plate, created_at, updated_at)
@@ -116,18 +144,50 @@ const updateMeBody = v.object({
   vehicle: v.nullable(v.object({ type: v.enum(VEHICLE_TYPES), plate: v.string({ min: 3, max: 15 }) })),
 });
 
+const passwordBody = v.object({
+  currentPassword: v.string({ min: 1, max: 128, trim: false }),
+  newPassword: v.string({ min: 6, max: 128, trim: false }),
+});
+
+const settingsBody = v.object({
+  push: v.optional(v.object({
+    orders: v.optional(v.boolean()),
+    chat: v.optional(v.boolean()),
+    trips: v.optional(v.boolean()),
+    promos: v.optional(v.boolean()),
+  })),
+});
+
+const verificationBody = v.object({
+  ktpPhotoUrl: v.string({ min: 1, max: 500 }),
+  selfiePhotoUrl: v.string({ min: 1, max: 500 }),
+});
+
+/** Order statuses that block deleting an account. */
+const UNFINISHED = ['open', 'requested', 'declined', 'accepted', 'picked_up', 'in_transit', 'arrived'];
+
 export function usersService(db: Db) {
   const repo = usersRepo(db);
 
   async function requireUser(id: string): Promise<UserRow> {
     const u = await repo.byId(id);
-    if (!u) throw unauthorized('Akun tidak ditemukan, silakan masuk lagi');
+    if (!u || u.deleted_at) throw unauthorized('Akun tidak ditemukan, silakan masuk lagi');
     return u;
+  }
+
+  async function checkPassword(u: UserRow, password: string) {
+    if (!(await verifyPassword(password, u.password_hash))) throw badRequest('Kata sandi salah', { field: 'currentPassword' });
   }
 
   return {
     repo,
     requireUser,
+
+    /** Called for every request with a token: the account must exist and the token must not be revoked. */
+    async isSessionValid(userId: string, version: number): Promise<boolean> {
+      const u = await db.get<{ token_version: number }>('SELECT token_version FROM users WHERE id = ? AND deleted_at IS NULL', [userId]);
+      return !!u && u.token_version === version;
+    },
 
     async register(input: unknown) {
       const body = parse(input, registerBody);
@@ -153,16 +213,16 @@ export function usersService(db: Db) {
       };
       await repo.insert(user);
       const row = await requireUser(user.id);
-      return { token: issueToken(row.id), user: toMe(row) };
+      return { token: issueToken(row.id, row.token_version), user: toMe(row) };
     },
 
     async login(input: unknown) {
       const body = parse(input, loginBody);
       const user = await repo.byPhone(normalisePhone(body.phone));
-      if (!user || !(await verifyPassword(body.password, user.password_hash))) {
+      if (!user || user.deleted_at || !(await verifyPassword(body.password, user.password_hash))) {
         throw unauthorized('Nomor HP atau kata sandi salah');
       }
-      return { token: issueToken(user.id), user: toMe(user) };
+      return { token: issueToken(user.id, user.token_version), user: toMe(user) };
     },
 
     async me(userId: string) {
@@ -181,6 +241,85 @@ export function usersService(db: Db) {
         vehicle_plate: body.vehicle === null ? null : body.vehicle?.plate,
       });
       return toMe(await requireUser(userId));
+    },
+
+    /** ST "Ubah kata sandi". Signs out every other device and returns a fresh token for this one. */
+    async changePassword(userId: string, input: unknown) {
+      const body = parse(input, passwordBody);
+      const u = await requireUser(userId);
+      await checkPassword(u, body.currentPassword);
+      if (body.currentPassword === body.newPassword) throw badRequest('Kata sandi baru harus berbeda', { field: 'newPassword' });
+      await db.run('UPDATE users SET password_hash = ?, token_version = token_version + 1, updated_at = ? WHERE id = ?', [
+        await hashPassword(body.newPassword), nowIso(), userId,
+      ]);
+      const fresh = await requireUser(userId);
+      return { token: issueToken(fresh.id, fresh.token_version), user: toMe(fresh) };
+    },
+
+    /** "Keluar dari semua perangkat": every existing token stops working, including this one. */
+    async logoutAll(userId: string) {
+      await db.run('UPDATE users SET token_version = token_version + 1, updated_at = ? WHERE id = ?', [nowIso(), userId]);
+      await db.run('DELETE FROM push_tokens WHERE user_id = ?', [userId]);
+      return { ok: true };
+    },
+
+    async settings(userId: string) {
+      return readSettings((await requireUser(userId)).settings_json);
+    },
+
+    /** ST "Notifikasi": partial update, e.g. `{ "push": { "promos": false } }`. */
+    async updateSettings(userId: string, input: unknown) {
+      const body = parse(input, settingsBody);
+      const current = readSettings((await requireUser(userId)).settings_json);
+      const pushPatch = Object.fromEntries(Object.entries(body.push ?? {}).filter(([, val]) => val !== undefined));
+      const next: UserSettings = { push: { ...current.push, ...pushPatch } };
+      await repo.update(userId, { settings_json: JSON.stringify(next) });
+      return next;
+    },
+
+    /** X4: KTP photo + selfie (upload both with POST /uploads first). */
+    async submitVerification(userId: string, input: unknown) {
+      const body = parse(input, verificationBody);
+      const u = await requireUser(userId);
+      if (u.verification_status === 'verified') throw conflict('Akun kamu sudah terverifikasi');
+      const approved = config.autoApproveVerification;
+      await repo.update(userId, {
+        ktp_photo_url: body.ktpPhotoUrl,
+        selfie_photo_url: body.selfiePhotoUrl,
+        verification_status: approved ? 'verified' : 'pending',
+        verified: approved ? 1 : 0,
+        verification_note: null,
+      });
+      return toMe(await requireUser(userId));
+    },
+
+    /**
+     * ST "Hapus akun". Needs the password. Refused while packages are still on the
+     * way; published routes without packages are cancelled. The row is anonymised
+     * (not deleted) so the other person's order history stays readable.
+     */
+    async deleteAccount(userId: string, input: unknown) {
+      const { password } = parse(input, v.object({ password: v.string({ min: 1, max: 128, trim: false }) }));
+      const u = await requireUser(userId);
+      await checkPassword(u, password);
+      const busy = await db.get<{ n: number }>(
+        `SELECT COUNT(*) AS n FROM orders WHERE (sender_id = ? OR driver_id = ?) AND status IN (${UNFINISHED.map(() => '?').join(',')})`,
+        [userId, userId, ...UNFINISHED],
+      );
+      if ((busy?.n ?? 0) > 0) throw conflict('Selesaikan atau batalkan pesanan yang masih berjalan sebelum menghapus akun');
+      const now = nowIso();
+      await db.transaction(async (tx) => {
+        await tx.run(`UPDATE trips SET status = 'cancelled', repeat_days_json = '[]', updated_at = ? WHERE driver_id = ? AND status IN ('published','ongoing')`, [now, userId]);
+        await tx.run('DELETE FROM push_tokens WHERE user_id = ?', [userId]);
+        await tx.run('DELETE FROM saved_places WHERE user_id = ?', [userId]);
+        await tx.run(
+          `UPDATE users SET name = 'Akun dihapus', phone = ?, email = NULL, password_hash = '!', avatar_url = NULL,
+             ktp_photo_url = NULL, selfie_photo_url = NULL, vehicle_type = NULL, vehicle_plate = NULL,
+             settings_json = '{}', token_version = token_version + 1, deleted_at = ?, updated_at = ? WHERE id = ?`,
+          [`deleted:${userId}`, now, now, userId],
+        );
+      });
+      return { ok: true };
     },
 
     async publicProfile(id: string) {
@@ -225,6 +364,12 @@ export function usersRoutes(users: UsersService): Router {
   r.get('/me', (ctx) => users.me(ctx.userId()));
   r.patch('/me', async (ctx) => users.updateMe(ctx.userId(), await ctx.json()));
   r.get('/me/stats', (ctx) => users.stats(ctx.userId()));
+  r.post('/me/password', async (ctx) => users.changePassword(ctx.userId(), await ctx.json()));
+  r.post('/auth/logout-all', (ctx) => users.logoutAll(ctx.userId()));
+  r.get('/me/settings', (ctx) => users.settings(ctx.userId()));
+  r.patch('/me/settings', async (ctx) => users.updateSettings(ctx.userId(), await ctx.json()));
+  r.post('/me/verification', async (ctx) => users.submitVerification(ctx.userId(), await ctx.json()));
+  r.post('/me/delete', async (ctx) => users.deleteAccount(ctx.userId(), await ctx.json()));
   r.get('/users/:id', (ctx) => {
     ctx.userId();
     return users.publicProfile(ctx.params.id);

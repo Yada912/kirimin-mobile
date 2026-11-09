@@ -150,3 +150,79 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export const PAYMENT_STATUSES = ['unpaid', 'paid', 'refunded', 'partially_refunded'] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+// ─── Account (O1, X4, ST) ───────────────────────────────────────────────────
+
+/** KTP verification (X4). Only `verified` shows the "KTP terverifikasi" badge. */
+export const VERIFICATION_STATUSES = ['none', 'pending', 'verified', 'rejected'] as const;
+export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
+
+export const VERIFICATION_LABELS: Record<VerificationStatus, string> = {
+  none: 'Belum verifikasi',
+  pending: 'Sedang diperiksa',
+  verified: 'KTP terverifikasi',
+  rejected: 'Verifikasi ditolak',
+};
+
+/** "Alamat tersimpan" icons. */
+export const SAVED_PLACE_KINDS = ['home', 'work', 'campus', 'other'] as const;
+export type SavedPlaceKind = (typeof SAVED_PLACE_KINDS)[number];
+
+export const SAVED_PLACE_LABELS: Record<SavedPlaceKind, string> = {
+  home: 'Rumah',
+  work: 'Kantor',
+  campus: 'Kampus',
+  other: 'Lainnya',
+};
+
+/** Which push notifications a user wants (ST "Notifikasi"). In-app notifications are always kept. */
+export const NOTIFICATION_CHANNELS = ['orders', 'chat', 'trips', 'promos'] as const;
+export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
+
+export const NOTIFICATION_CHANNEL_LABELS: Record<NotificationChannel, string> = {
+  orders: 'Status pesanan',
+  chat: 'Pesan chat',
+  trips: 'Rute & permintaan titipan',
+  promos: 'Promo & info',
+};
+
+// ─── Problem reports (S9 / D10) ─────────────────────────────────────────────
+
+export const REPORT_CATEGORIES = ['damaged', 'lost', 'late', 'wrong_item', 'payment', 'behaviour', 'safety', 'other'] as const;
+export type ReportCategory = (typeof REPORT_CATEGORIES)[number];
+
+export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
+  damaged: 'Paket rusak',
+  lost: 'Paket hilang',
+  late: 'Terlambat',
+  wrong_item: 'Isi paket tidak sesuai',
+  payment: 'Masalah pembayaran',
+  behaviour: 'Perilaku pengguna',
+  safety: 'Keamanan',
+  other: 'Lainnya',
+};
+
+export const REPORT_STATUSES = ['open', 'in_review', 'resolved'] as const;
+export type ReportStatus = (typeof REPORT_STATUSES)[number];
+
+// ─── Driver wallet (P10–P12, mocked payouts) ───────────────────────────────
+
+export const WALLET_ENTRY_TYPES = ['earning', 'cash_earning', 'compensation', 'withdrawal'] as const;
+export type WalletEntryType = (typeof WALLET_ENTRY_TYPES)[number];
+
+export const WALLET_ENTRY_LABELS: Record<WalletEntryType, string> = {
+  earning: 'Pendapatan titipan',
+  cash_earning: 'Pendapatan tunai',
+  compensation: 'Kompensasi pembatalan',
+  withdrawal: 'Tarik saldo',
+};
+
+export const PAYOUT_METHODS = ['bank', 'ewallet'] as const;
+export type PayoutMethod = (typeof PAYOUT_METHODS)[number];
+
+export const PAYOUT_PROVIDERS: Record<PayoutMethod, string[]> = {
+  bank: ['BCA', 'BRI', 'BNI', 'Mandiri', 'BPD Bali', 'BSI'],
+  ewallet: ['GoPay', 'OVO', 'DANA', 'ShopeePay'],
+};
+
+export const WITHDRAWAL_RULES = { min: 10_000, max: 5_000_000 };
