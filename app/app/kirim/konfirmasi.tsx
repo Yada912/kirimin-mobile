@@ -3,7 +3,7 @@ import { StyleSheet, View, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPin, User, Package, Bike, CreditCard } from 'lucide-react-native';
-import type { PaymentMethod, TripMatch, Order } from '@kirimin/shared';
+import type { PaymentMethod, TripMatch } from '@kirimin/shared';
 import { PAYMENT_METHODS } from '@kirimin/shared';
 import { colors, radii, spacing } from '../../src/theme/tokens';
 import {
@@ -18,6 +18,8 @@ import {
   Divider,
 } from '../../src/ui';
 import { useCreateOrder } from '../../src/api/hooks/useApi';
+import { confirmPrice, orderPayload, readKirimDraft } from '../../src/features/kirim/draft';
+import { formatSimilarity } from '../../src/utils/format';
 
 export default function KirimKonfirmasiScreen() {
   const router = useRouter();
@@ -27,39 +29,16 @@ export default function KirimKonfirmasiScreen() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [error, setError] = useState<string | null>(null);
 
-  const pickup = params.pickup ? JSON.parse(params.pickup as string) : null;
-  const dropoff = params.dropoff ? JSON.parse(params.dropoff as string) : null;
-  const recipient = params.recipient ? JSON.parse(params.recipient as string) : null;
-  const handling = params.handling ? JSON.parse(params.handling as string) : [];
-  const matchData: TripMatch | null = params.matchData ? JSON.parse(params.matchData as string) : null;
-  const tripId = params.tripId ? (params.tripId as string) : undefined;
-
-  const fee = matchData?.price?.fee ?? 10000;
-  const serviceFee = matchData?.price?.serviceFee ?? 2000;
-  const total = matchData?.price?.total ?? 12000;
+  // Same reader/builders the contract tests use (src/features/kirim/draft.ts).
+  const draft = readKirimDraft(params);
+  const { pickup, dropoff, recipient, tripId } = draft;
+  const matchData: TripMatch | null = draft.match;
+  const price = confirmPrice(draft);
 
   const handleSubmit = async () => {
     try {
       setError(null);
-      const payload: any = {
-        category: params.category,
-        size: params.size,
-        weightClass: params.weightClass,
-        handling,
-        photoUrl: params.photoUrl ? (params.photoUrl as string) : null,
-        notes: (params.notes as string) || '',
-        pickup,
-        dropoff,
-        recipient,
-        handoverMethod: params.handoverMethod || 'meet',
-        paymentMethod,
-      };
-
-      if (tripId) {
-        payload.tripId = tripId;
-      }
-
-      const newOrder = await createOrder(payload);
+      const newOrder = await createOrder(orderPayload(draft, paymentMethod));
 
       // If sent with tripId -> S5 lacak; if open request -> S6 menunggu
       if (tripId) {
@@ -106,7 +85,7 @@ export default function KirimKonfirmasiScreen() {
                     Kendaraan: {matchData.trip.vehicle.plate} ({matchData.trip.vehicle.type})
                   </Text>
                   <Text variant="caption" color={colors.primary} weight="600" style={{ marginTop: 2 }}>
-                    {matchData.kind === 'direct' ? 'Rute Langsung' : 'Dengan Simpangan'} • {Math.round(matchData.similarity * 100)}% searah
+                    {matchData.kind === 'direct' ? 'Rute Langsung' : 'Dengan Simpangan'} • {formatSimilarity(matchData.similarity)} searah
                   </Text>
                 </View>
               </View>
@@ -210,7 +189,13 @@ export default function KirimKonfirmasiScreen() {
             Rincian Pembayaran
           </Text>
           <Card variant="elevated" padding="lg">
-            <PriceRow fee={fee} serviceFee={serviceFee} total={total} />
+            {price ? (
+              <PriceRow fee={price.fee} serviceFee={price.serviceFee} total={price.total} />
+            ) : (
+              <Text variant="callout" color={colors.text.secondary}>
+                Ongkos ditentukan saat driver menerima permintaanmu.
+              </Text>
+            )}
           </Card>
         </View>
       </ScrollView>

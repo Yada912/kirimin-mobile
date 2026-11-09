@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import EventSource from 'react-native-sse';
 import { useQueryClient } from '@tanstack/react-query';
-import type { RealtimeEvent, Order } from '@kirimin/shared';
+import type { RealtimeEvent } from '@kirimin/shared';
 import { API_BASE_URL } from '../utils/config';
 import { useAuth } from '../auth/AuthContext';
 import { queryKeys } from './hooks/useApi';
@@ -21,7 +21,9 @@ export function useRealtimeSubscription() {
     }
 
     const sseUrl = `${API_BASE_URL}/events?token=${encodeURIComponent(token)}`;
-    const es = new EventSource(sseUrl, {
+    // The server sends *named* events ("event: order.updated"), which EventSource only
+    // delivers to listeners registered under that name — never to 'message'.
+    const es = new EventSource<RealtimeEvent['type']>(sseUrl, {
       headers: {
         'ngrok-skip-browser-warning': '1',
       },
@@ -32,7 +34,7 @@ export function useRealtimeSubscription() {
       // Connected
     });
 
-    es.addEventListener('message', (event: any) => {
+    const handle = (event: { data?: string | null }) => {
       try {
         if (!event.data) return;
         const data: RealtimeEvent = JSON.parse(event.data);
@@ -63,7 +65,13 @@ export function useRealtimeSubscription() {
       } catch (err) {
         console.warn('Error parsing SSE event:', err);
       }
-    });
+    };
+
+    // One line per event in shared/src/api.ts → RealtimeEvent (a contract test checks this list).
+    es.addEventListener('order.updated', handle);
+    es.addEventListener('message.created', handle);
+    es.addEventListener('notification.created', handle);
+    es.addEventListener('trip.location', handle);
 
     es.addEventListener('error', (err) => {
       // Stream drop is gracefully handled; react-query polling remains active fallback

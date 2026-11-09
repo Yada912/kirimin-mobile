@@ -1,0 +1,51 @@
+# S1 → S5: Wayan sends a document to Made, who is already driving Renon → Kampus Bukit.
+appId: com.kirimin.app
+name: 02 Kirim – send a package to a driver searah
+tags: [mvp]
+---
+- runScript:
+    file: ../scripts/api.js
+    env:
+      ACTION: preflight
+- runFlow:
+    file: ../subflows/login_as.yaml
+    env:
+      DEMO_BUTTON: "Masuk: Wayan.*"
+      HOME_TEXT: "Kirim Paket Sekarang"
+
+# S1 Detail Paket — defaults are Dokumen / XS / < 1 kg
+- tapOn: "Kirim Paket Sekarang"
+- assertVisible: "Detail Paket.*"
+- tapOn: "Lanjut: Atur Rute"
+
+# S2 Rute — defaults are Renon → Kampus Bukit, recipient Dewa
+- assertVisible: "Rute & Penerima.*"
+- extendedWaitUntil:                   # price estimate from POST /matches/estimate
+    visible: ".*Rp.*"
+    timeout: 10000
+- tapOn: "Lanjut: Cari Driver Searah"
+
+# S3 Driver Searah — Made must be offered, with a sane similarity label
+- extendedWaitUntil:
+    visible: "Made S\\."
+    timeout: 10000
+- assertVisible: ".*\\d{1,3}% searah.*"
+- assertNotVisible: ".*\\d{4,}% searah.*"   # regression: "9400% searah"
+- tapOn:
+    text: "Pilih Driver"
+    below: "Made S\\."
+
+# S4 Konfirmasi — driver, price, then send
+- assertVisible: "Tinjau & Konfirmasi.*"
+- assertVisible: "Made S\\."
+- assertNotVisible: ".*\\d{4,}% searah.*"
+- tapOn: "Kirim Permintaan ke Driver"
+
+# S5 Lacak — waiting for Made, and the 4-digit code is shown to the sender
+- extendedWaitUntil:
+    visible: "Lacak Pesanan"
+    timeout: 10000
+- assertVisible: "Menunggu konfirmasi driver"
+- assertVisible:
+    id: "handover-code-display"
+- takeScreenshot: e2e-02-lacak

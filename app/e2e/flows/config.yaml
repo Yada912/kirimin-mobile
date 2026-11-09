@@ -1,0 +1,11 @@
+# `maestro test e2e/flows` runs these in order; 02 → 03 → 04 depend on each other.
+flows:
+  - "*"
+executionOrder:
+  continueOnFailure: false
+  flowsOrder:
+    - 01 Smoke – all tabs render
+    - 02 Kirim – send a package to a driver searah
+    - 03 Angkut – accept, pick up, deliver with code
+    - 04 Kirim – see delivery and rate the driver
+    - 05 Kirim – open request, then cancel

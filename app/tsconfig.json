@@ -11,5 +11,10 @@
       ]
     },
     "allowImportingTsExtensions": true
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "tests",
+    "e2e"
+  ]
 }

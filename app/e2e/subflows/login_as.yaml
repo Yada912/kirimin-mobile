@@ -1,0 +1,18 @@
+# Fresh start + quick demo login from the Welcome screen.
+# Usage:
+#   - runFlow:
+#       file: ../subflows/login_as.yaml
+#       env:
+#         DEMO_BUTTON: "Masuk: Wayan.*"     # or "Masuk: Made.*"
+#         HOME_TEXT: "Kirim Paket Sekarang" # something only that role's home shows
+appId: com.kirimin.app
+---
+- launchApp:
+    clearState: true          # wipes the saved login token
+- extendedWaitUntil:          # first launch of a debug build downloads the JS bundle
+    visible: "AKUN DEMO CEPAT.*"
+    timeout: 60000
+- tapOn: "${DEMO_BUTTON}"
+- extendedWaitUntil:
+    visible: "${HOME_TEXT}"
+    timeout: 15000

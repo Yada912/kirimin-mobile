@@ -14,6 +14,8 @@ export interface CodeInputProps {
   onChange: (val: string) => void;
   length?: number;
   style?: ViewStyle;
+  /** For E2E tests: the tappable boxes get `${testID}`, the hidden input `${testID}-input`. */
+  testID?: string;
 }
 
 export function CodeInput({
@@ -21,6 +23,7 @@ export function CodeInput({
   onChange,
   length = 4,
   style,
+  testID,
 }: CodeInputProps) {
   const inputRef = useRef<any>(null);
 
@@ -32,7 +35,7 @@ export function CodeInput({
 
   return (
     <View style={[styles.container, style]}>
-      <Pressable onPress={handlePress} style={styles.boxesRow}>
+      <Pressable onPress={handlePress} style={styles.boxesRow} testID={testID}>
         {Array.from({ length }).map((_, i) => {
           const char = digits[i] || '';
           const isFocused = i === digits.length;
@@ -56,6 +59,7 @@ export function CodeInput({
 
       <TextInput
         ref={inputRef}
+        testID={testID ? `${testID}-input` : undefined}
         value={value}
         onChangeText={(text) => {
           const cleaned = text.replace(/[^0-9]/g, '').slice(0, length);

@@ -62,6 +62,16 @@ npm start          # Or npx expo start, then press 'a' for Android emulator
 ```
 
 See [docs/APP.md](docs/APP.md) for the component system and architecture.
+
+### Tests
+
+```bash
+cd server && npm test             # backend rules
+cd app && npm run test:contract   # UI ↔ API contract, no emulator needed
+cd app && npm run e2e             # Maestro UI flows on the Android emulator
+```
+
+See [docs/TESTING.md](docs/TESTING.md) for setup and what each layer covers.
 See [docs/SETUP-LAPTOP.md](docs/SETUP-LAPTOP.md) for connecting a phone (same Wi-Fi, ngrok or Cloudflare tunnel).
 
 ## How the backend is organised

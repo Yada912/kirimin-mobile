@@ -163,7 +163,7 @@ export default function SerahTerimaScreen() {
             Minta penerima paket menyebutkan 4 digit kode rahasia yang tertera di aplikasi mereka.
           </Text>
 
-          <CodeInput value={code} onChange={setCode} length={4} />
+          <CodeInput value={code} onChange={setCode} length={4} testID="handover-code" />
         </Card>
 
         {/* Proof Photo (Optional for meet, mandatory if leave at location) */}
