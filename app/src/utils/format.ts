@@ -53,3 +53,4 @@ export function formatDateTime(isoString: string | null | undefined): string {
 export function formatDetour(km: number, minutes: number): string {
   return `+${formatDistance(km)} (~${minutes} mnt)`;
 }
+

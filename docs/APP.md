@@ -138,3 +138,4 @@ All presentational components are typed, reusable, and accessible:
    - **Loading**: `<SkeletonCard />`
    - **Empty**: `<EmptyState title="..." description="..." />`
    - **Error**: `<ErrorState message="..." onRetry={...} />`
+

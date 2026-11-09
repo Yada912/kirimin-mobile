@@ -51,3 +51,4 @@ export async function removeToken(): Promise<void> {
     console.warn('Could not remove auth token:', err);
   }
 }
+

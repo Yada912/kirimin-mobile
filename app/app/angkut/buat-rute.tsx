@@ -225,3 +225,4 @@ const styles = StyleSheet.create({
     borderTopColor: colors.borderLight,
   },
 });
+

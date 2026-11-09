@@ -15,3 +15,4 @@ export function resolveApiUrl(url: string | null | undefined): string | null {
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
   return `${cleanBase}${cleanPath}`;
 }
+
