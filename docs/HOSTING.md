@@ -20,20 +20,46 @@ Render's free disk is wiped whenever the service sleeps or redeploys. The server
 
 ## What changes in the code when you deploy
 
-The server was built with this move in mind. Each swap touches **one file**, and no routes or services change.
+Nothing, because both adapters are already built in. The server picks them from environment variables, and no routes or services change. Without these variables it keeps using the laptop setup (SQLite file + `data/uploads`), and the tests always do.
 
-1. **Database → Turso.** `server/src/db/database.ts` defines a small async `Db` interface (`all`, `get`, `run`, `transaction`). Add `npm install @libsql/client`, then write an `openLibsql(url, authToken)` that implements the same four methods with `client.execute({ sql, args })` (and `client.transaction('write')` for transactions). In `index.ts`, use it when `DATABASE_URL` starts with `libsql://`. Migrations and SQL stay as they are.
-2. **Photos → Cloudinary.** `server/src/storage/files.ts` defines `FileStore` (`save`, `serve`). Write a `cloudinaryFileStore` whose `save` uploads the bytes and returns the absolute `secure_url`. `serve` is no longer needed. The app already treats photo URLs as opaque strings.
-3. **Environment variables on Render:** `NODE_ENV=production`, `JWT_SECRET` (the blueprint generates one), `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `CLOUDINARY_URL`.
-4. **App:** change the API base URL from the laptop/ngrok address to `https://kirimin-api.onrender.com`.
+1. **Database → Turso** (`server/src/db/libsql.ts`). This implements the same `Db` interface as `database.ts` over Turso's HTTP API ("Hrana over HTTP", `POST /v2/pipeline`) with plain `fetch`. There's no `@libsql/client`, so the server stays zero-dependency. The server uses it when `DATABASE_URL` starts with `libsql://`; the token goes in `DATABASE_AUTH_TOKEN`.
+   - A transaction keeps one Turso stream open (the "baton") from `BEGIN IMMEDIATE` to `COMMIT`/`ROLLBACK`. Writes and transactions from this server are queued one at a time, as on the single SQLite connection, so the server never competes with itself for Turso's write lock. Reads outside a transaction run in parallel.
+   - The migrations in `server/src/db/migrations/` run unchanged at startup, including `ALTER TABLE … ADD COLUMN` and the partial unique index in `002_mvp_features.sql`. Turso is SQLite. `PRAGMA foreign_keys = ON` is sent on every stream.
+   - With `SEED_ON_EMPTY=true` (the `render.yaml` default), the demo users are created once on the first start against an empty Turso database. Set it to `false` if you don't want them.
+   - `npm run db:reset` only touches the local SQLite file. To start a Turso database over, run `turso db destroy kirimin` and create it again.
+2. **Photos → Cloudinary** (`cloudinaryFileStore` in `server/src/storage/files.ts`). This is a signed upload built from `CLOUDINARY_URL`. `POST /uploads` then returns the absolute `https://res.cloudinary.com/…` `secure_url` instead of `/uploads/<name>`, and `GET /uploads/:name` isn't used. The app already treats photo URLs as opaque strings, and the same type/size checks apply. Photos go into the `kirimin` folder; change it with `CLOUDINARY_FOLDER`.
+3. **Environment variables on Render:** `NODE_ENV=production`, `JWT_SECRET` (the blueprint generates one), `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `CLOUDINARY_URL`. The blueprint lists the last three with `sync: false`, so Render asks for their values when you create it.
+4. **App:** change the API base URL from the laptop/ngrok address to `https://kirimin-api.onrender.com`. Photo URLs from Cloudinary are already absolute. Photos uploaded earlier on the laptop (`/uploads/…`) stay on the laptop.
 
-Steps 1–2 are about 40 lines each. Ask Claude to do them when you get there; they couldn't be done in this session because package installs were disabled.
+### Getting the values
+
+- **Turso:** sign up at turso.tech (no card), install the CLI, then run:
+  ```bash
+  turso db create kirimin --location sin    # Singapore is the closest region to Bali
+  turso db show kirimin --url               # → DATABASE_URL (libsql://kirimin-<you>.turso.io)
+  turso db tokens create kirimin            # → DATABASE_AUTH_TOKEN
+  ```
+  Check `turso db locations` for the exact region code.
+- **Cloudinary:** sign up at cloudinary.com (no card). In the console go to **Settings → API Keys** and copy the **API environment variable**: `cloudinary://<api_key>:<api_secret>@<cloud_name>`. That is `CLOUDINARY_URL`.
+
+### Verifying against real Turso/Cloudinary accounts
+
+Do this once on the laptop before deploying:
+
+1. Put the values in `server/.env` (see `.env.example`). Use a **separate** Turso database for this check (e.g. `turso db create kirimin-check`) if you don't want demo data in the real one.
+2. Run `npm run verify:hosting` in `server/`. It connects to Turso, applies the migrations, checks that a transaction rolls back, uploads one 1×1 test image to Cloudinary and fetches it back. Every line should start with ✔. A ✘ line shows Turso's or Cloudinary's own error message (a wrong token shows up as `HTTP 401`, a wrong secret as `Invalid Signature`).
+3. Run `npm run dev`. The first lines should say `Database: Turso/libSQL at …` and `Photos: Cloudinary`. Log in with a demo account, upload a photo with `POST /uploads` (see `requests.http`) and open the returned `https://res.cloudinary.com/…` URL. Restart the server and check the data is still there.
+4. Optional: `turso db shell kirimin "SELECT name FROM _migrations"` should list every migration file.
+
+Afterwards delete the test image in the Cloudinary Media Library (folder `kirimin`) and the check database with `turso db destroy kirimin-check` if you made one.
+
+The automated tests don't need any accounts. `npm test` uses in-memory SQLite and local files. `npm run test:libsql` runs the feature tests through the Turso adapter against a local fake libSQL server (`server/test/fakeHrana.ts`). `test/cloudinary.test.ts` checks the upload signature against Cloudinary's documented example.
 
 ## Deploying to Render (when ready)
 
 1. Push the repo to GitHub (already done).
 2. render.com → **New → Blueprint** → pick `kirimin-mobile`. Render reads `render.yaml`.
-3. Add the Turso and Cloudinary variables, then deploy. Check `https://<name>.onrender.com/health`.
+3. Enter the Turso and Cloudinary values when Render asks for them (or later under **Environment**), then deploy. The deploy log should show `Database: Turso/libSQL` and `Photos: Cloudinary`. Check `https://<name>.onrender.com/health`.
 
 The server needs no build step. Render runs `npm start` in `server/`, which runs the TypeScript directly on Node 24.
 

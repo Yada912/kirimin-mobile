@@ -6,14 +6,21 @@ import path from 'node:path';
 import type { AuthResponse } from '../../shared/src/index.ts';
 import { createApp } from '../src/app.ts';
 import { migrate, openSqlite } from '../src/db/database.ts';
+import { openLibsql } from '../src/db/libsql.ts';
+import { startFakeHrana } from './fakeHrana.ts';
 import { DEMO_PASSWORD, seed } from '../src/db/seed.ts';
 import { createHub } from '../src/realtime/hub.ts';
 import { localFileStore } from '../src/storage/files.ts';
 import { recordingPushSender } from '../src/push/expo.ts';
 
-/** A real HTTP server on a random port with an in-memory, freshly seeded database. */
+/**
+ * A real HTTP server on a random port with an in-memory, freshly seeded database.
+ * With TEST_DB=libsql (`npm run test:libsql`) the database is reached through the
+ * Turso adapter, talking to a local fake libSQL server instead.
+ */
 export async function startTestServer() {
-  const db = openSqlite(':memory:');
+  const hrana = process.env.TEST_DB === 'libsql' ? await startFakeHrana() : null;
+  const db = hrana ? openLibsql(hrana.url) : openSqlite(':memory:');
   await migrate(db);
   await seed(db);
   const hub = createHub();
@@ -51,6 +58,7 @@ export async function startTestServer() {
     hub.closeAll();
     await new Promise((resolve) => server.close(resolve));
     db.close();
+    await hrana?.close();
     rmSync(uploadDir, { recursive: true, force: true });
   }
 

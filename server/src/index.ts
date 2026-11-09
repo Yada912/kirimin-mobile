@@ -4,18 +4,34 @@ import { config } from './config.ts';
 import { migrate, openSqlite } from './db/database.ts';
 import { seedIfEmpty } from './db/seed.ts';
 import { createHub } from './realtime/hub.ts';
-import { localFileStore } from './storage/files.ts';
+import { openLibsql } from './db/libsql.ts';
+import { cloudinaryFileStore, localFileStore } from './storage/files.ts';
 import { createApp } from './app.ts';
 import { expoPushSender, noopPushSender } from './push/expo.ts';
 
-const db = openSqlite(config.databasePath);
+function openDatabase() {
+  const url = config.databaseUrl;
+  if (url && /^(libsql|https?):\/\//i.test(url)) {
+    console.log(`Database: Turso/libSQL at ${new URL(url).host}`);
+    return openLibsql(url, config.databaseAuthToken);
+  }
+  if (url) throw new Error(`DATABASE_URL must start with libsql:// (got "${url.split(':')[0]}:"). Unset it to use DATABASE_PATH.`);
+  console.log(`Database: SQLite file ${config.databasePath}`);
+  return openSqlite(config.databasePath);
+}
+
+const db = openDatabase();
 const applied = await migrate(db);
 if (applied.length) console.log(`Migrations applied: ${applied.join(', ')}`);
 if (config.seedOnEmpty && (await seedIfEmpty(db))) console.log('Seeded demo data (password for all demo users: kirimin123)');
 
 const hub = createHub();
 const push = config.pushEnabled ? expoPushSender(config.expoAccessToken) : noopPushSender;
-const app = createApp({ db, hub, files: localFileStore(config.uploadDir), push });
+const files = config.cloudinaryUrl
+  ? cloudinaryFileStore(config.cloudinaryUrl, { folder: config.cloudinaryFolder })
+  : localFileStore(config.uploadDir);
+console.log(`Photos: ${config.cloudinaryUrl ? 'Cloudinary' : `local folder ${config.uploadDir}`}`);
+const app = createApp({ db, hub, files, push });
 const server = createServer((req, res) => void app.handle(req, res));
 
 // Expire requests whose deadline passed without a driver.
