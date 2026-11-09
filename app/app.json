@@ -1,15 +1,18 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "Kirimin",
+    "slug": "kirimin",
+    "scheme": "kirimin",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true
-    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
     "android": {
+      "package": "com.kirimin.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
