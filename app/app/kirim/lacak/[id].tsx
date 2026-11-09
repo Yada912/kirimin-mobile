@@ -113,6 +113,7 @@ export default function LacakPesananScreen() {
         {order.handoverCode && !isCompleted && !isCancelled && (
           <CodeDisplay
             code={order.handoverCode}
+            testID="handover-code-display"
             label="Kode Serah Terima (4 Digit)"
             hint="Berikan kode ini ke penerima paket. Driver akan meminta kode ini di lokasi tujuan untuk menyelesaikan pengantaran."
             style={styles.codeCard}

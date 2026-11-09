@@ -25,6 +25,8 @@ export interface ButtonProps {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** For E2E tests (Maestro `id:`). */
+  testID?: string;
 }
 
 export function Button({
@@ -38,6 +40,7 @@ export function Button({
   leftIcon,
   rightIcon,
   style,
+  testID,
 }: ButtonProps) {
   const isInteractive = !disabled && !loading;
 
@@ -113,6 +116,7 @@ export function Button({
       onPress={isInteractive ? onPress : undefined}
       style={({ pressed }) => [getContainerStyle(pressed), style]}
       accessibilityRole="button"
+      testID={testID}
       accessibilityState={{ disabled: !isInteractive }}
     >
       {loading ? (

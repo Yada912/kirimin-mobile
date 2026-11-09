@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Node-only test code (contract tests). Not bundled into the app."
+}

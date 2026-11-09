@@ -54,3 +54,12 @@ export function formatDetour(km: number, minutes: number): string {
   return `+${formatDistance(km)} (~${minutes} mnt)`;
 }
 
+
+/**
+ * Route similarity from the API is already a percentage (10–100), e.g. 94 → "94%".
+ * Clamped so a bad value can never render as "9400%".
+ */
+export function formatSimilarity(similarity: number | null | undefined): string {
+  if (similarity == null || isNaN(similarity)) return '0%';
+  return `${Math.round(Math.max(0, Math.min(100, similarity)))}%`;
+}

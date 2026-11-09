@@ -18,7 +18,8 @@ import {
   ErrorState,
 } from '../../src/ui';
 import { api } from '../../src/api/client';
-import { formatRupiah, formatTime, formatDetour } from '../../src/utils/format';
+import { formatRupiah, formatTime, formatDetour, formatSimilarity } from '../../src/utils/format';
+import { readKirimDraft, searchPayload } from '../../src/features/kirim/draft';
 
 export default function KirimDriverScreen() {
   const router = useRouter();
@@ -34,14 +35,10 @@ export default function KirimDriverScreen() {
       setLoading(true);
       setError(null);
 
-      const pickup = JSON.parse(params.pickup as string);
-      const dropoff = JSON.parse(params.dropoff as string);
-
-      const res = await api.post<{ direct: TripMatch[]; detour: TripMatch[] }>('/matches/search', {
-        size: params.size,
-        pickup: { lat: pickup.lat, lng: pickup.lng },
-        dropoff: { lat: dropoff.lat, lng: dropoff.lng },
-      });
+      const res = await api.post<{ direct: TripMatch[]; detour: TripMatch[] }>(
+        '/matches/search',
+        searchPayload(readKirimDraft(params)),
+      );
 
       setDirectMatches(res.direct || []);
       setDetourMatches(res.detour || []);
@@ -111,7 +108,7 @@ export default function KirimDriverScreen() {
             variant="captionMedium"
             color={isDirect ? colors.primary : colors.semantic.warning}
           >
-            {isDirect ? `${Math.round(match.similarity * 100)}% searah` : formatDetour(match.detourKm, match.detourMinutes)}
+            {isDirect ? `${formatSimilarity(match.similarity)} searah` : formatDetour(match.detourKm, match.detourMinutes)}
           </Text>
         </View>
       </View>

@@ -1,0 +1,74 @@
+# D3 → D5 → X2: Made accepts Wayan's request, picks it up and hands it over with the code.
+# Needs flow 02 to have run first.
+appId: com.kirimin.app
+name: 03 Angkut – accept, pick up, deliver with code
+tags: [mvp]
+---
+- runFlow:
+    file: ../subflows/login_as.yaml
+    env:
+      DEMO_BUTTON: "Masuk: Made.*"
+      HOME_TEXT: "Publikasikan Rute Baru"
+
+# Beranda → active route card → D3 Permintaan Masuk
+- tapOn: "Ke Kampus"
+- extendedWaitUntil:
+    visible: "Terima"
+    timeout: 10000
+- tapOn:
+    text: "Terima"
+    index: 0                   # requests sent to this route are listed before open ones
+
+# The "Perjalanan" button appears once a slot is used
+- extendedWaitUntil:
+    visible: "Perjalanan"
+    timeout: 10000
+- tapOn: "Perjalanan"
+
+# D5 Perjalanan Aktif
+- tapOn: "Mulai Perjalanan Sekarang"
+- extendedWaitUntil:
+    visible: "Konfirmasi Dijemput.*"
+    timeout: 10000
+- tapOn: "Konfirmasi Dijemput.*"
+- extendedWaitUntil:
+    visible: "Konfirmasi Tiba di Lokasi"
+    timeout: 10000
+- tapOn: "Konfirmasi Tiba di Lokasi"
+- extendedWaitUntil:
+    visible: "Masukkan Kode Serah Terima.*"
+    timeout: 10000
+- tapOn: "Masukkan Kode Serah Terima.*"
+
+# X2 Serah Terima — wrong code first (must show an error, not crash), then the real one
+- assertVisible: "Serah Terima.*"
+- runScript:
+    file: ../scripts/api.js
+    env:
+      ACTION: handoverCode
+- tapOn:
+    id: "handover-code"
+- inputText: "${output.code == '0000' ? '1111' : '0000'}"
+- hideKeyboard
+- tapOn: "Konfirmasi Selesai Antar"
+- assertVisible: "Kode serah terima salah"   # the server’s message, shown as-is
+- assertNotVisible: "Paket Berhasil Diserahkan!"
+- tapOn:
+    id: "handover-code"
+- eraseText: 4
+- inputText: "${output.code}"
+- hideKeyboard
+- tapOn: "Konfirmasi Selesai Antar"
+- extendedWaitUntil:
+    visible: "Paket Berhasil Diserahkan!"
+    timeout: 10000
+- takeScreenshot: e2e-03-delivered
+
+# Back to the trip and finish it
+- tapOn: "Kembali ke Perjalanan"
+- scrollUntilVisible:
+    element: "Selesaikan Rute Perjalanan"
+- tapOn: "Selesaikan Rute Perjalanan"
+- extendedWaitUntil:
+    visible: "Rute Saya"
+    timeout: 10000

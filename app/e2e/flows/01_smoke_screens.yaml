@@ -1,0 +1,40 @@
+# Smoke test: every tab and main screen of both roles renders without crashing.
+appId: com.kirimin.app
+name: 01 Smoke – all tabs render
+tags: [smoke]
+---
+- runScript:
+    file: ../scripts/api.js
+    env:
+      ACTION: preflight
+
+# ── Kirim (sender) ─────────────────────────────────────────────
+- runFlow:
+    file: ../subflows/login_as.yaml
+    env:
+      DEMO_BUTTON: "Masuk: Wayan.*"
+      HOME_TEXT: "Kirim Paket Sekarang"
+- tapOn: "Aktivitas"
+- assertVisible: "Sedang Berjalan"
+- tapOn: "Riwayat Selesai"
+- tapOn: "Notifikasi"
+- tapOn: "Profil"
+- assertVisible: "Ganti ke Angkut.*"
+- tapOn: "Beranda"
+- tapOn: "Kirim Paket Sekarang"
+- assertVisible: "Detail Paket.*"       # S1 opens
+- back
+
+# ── Switch role → Angkut (driver) ──────────────────────────────
+- tapOn: "Profil"
+- tapOn: "Ganti ke Angkut.*"
+- extendedWaitUntil:
+    visible: "Publikasikan Rute Baru"
+    timeout: 10000
+- tapOn: "Rute Saya"
+- tapOn: "Kiriman"
+- tapOn: "Profil"
+- tapOn: "Beranda"
+- tapOn: "Publikasikan Rute Baru"
+- assertNotVisible: ".*[Ee]rror.*"      # D1 opens without a red error screen
+- back

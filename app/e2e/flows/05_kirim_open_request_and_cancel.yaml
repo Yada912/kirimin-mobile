@@ -1,0 +1,34 @@
+# S3 → S6 → S7: post an open request (no driver chosen), then cancel it.
+appId: com.kirimin.app
+name: 05 Kirim – open request, then cancel
+tags: [mvp]
+---
+- runFlow:
+    file: ../subflows/login_as.yaml
+    env:
+      DEMO_BUTTON: "Masuk: Wayan.*"
+      HOME_TEXT: "Kirim Paket Sekarang"
+- tapOn: "Kirim Paket Sekarang"
+- tapOn: "Lanjut: Atur Rute"
+- tapOn: "Lanjut: Cari Driver Searah"
+- scrollUntilVisible:
+    element: "Posting Permintaan Terbuka"
+- tapOn: "Posting Permintaan Terbuka"
+
+# S4 for an open request: no fake price
+- assertVisible: "Tinjau & Konfirmasi.*"
+- assertVisible: "Ongkos ditentukan saat driver menerima.*"
+- tapOn: "Posting Permintaan Terbuka"
+
+# S6 Menunggu Driver → S7 Batalkan
+- extendedWaitUntil:
+    visible: "Menunggu Driver.*"
+    timeout: 10000
+- tapOn: "Batalkan Permintaan"
+- assertVisible: "Batalkan Pesanan.*"
+- scrollUntilVisible:
+    element: "Ya, Batalkan Pesanan Ini"
+- tapOn: "Ya, Batalkan Pesanan Ini"
+- extendedWaitUntil:
+    visible: "Sedang Berjalan"
+    timeout: 10000

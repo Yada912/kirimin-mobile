@@ -6,6 +6,7 @@ import { Star } from 'lucide-react-native';
 import { colors, radii, spacing } from '../../src/theme/tokens';
 import { Text, TopBar, Card, Avatar, Button, ChipGroup, TextField, SkeletonCard, ErrorState } from '../../src/ui';
 import { useOrder, useRateOrder } from '../../src/api/hooks/useApi';
+import { useAuth } from '../../src/auth/AuthContext';
 
 const RATING_TAGS = [
   'Tepat Waktu',
@@ -21,6 +22,7 @@ export default function RatingScreen() {
 
   const { data: order, isLoading } = useOrder(orderId);
   const { mutateAsync: rateOrder, isPending } = useRateOrder();
+  const { activeRole } = useAuth();
 
   const [stars, setStars] = useState(5);
   const [selectedTags, setSelectedTags] = useState<string[]>(['Tepat Waktu', 'Paket Terjaga Aman']);
@@ -36,7 +38,7 @@ export default function RatingScreen() {
         tags: selectedTags,
         comment: comment.trim() || 'Pelayanan sangat memuaskan.',
       });
-      router.replace('/(kirim)/aktivitas');
+      router.replace(activeRole === 'driver' ? '/(angkut)/aktivitas' : '/(kirim)/aktivitas');
     } catch (err: any) {
       setRateError(err.message || 'Gagal mengirimkan rating');
     }

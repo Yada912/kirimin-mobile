@@ -9,6 +9,8 @@ export interface CodeDisplayProps {
   label?: string;
   hint?: string;
   style?: ViewStyle;
+  /** For E2E tests. */
+  testID?: string;
 }
 
 export function CodeDisplay({
@@ -16,6 +18,7 @@ export function CodeDisplay({
   label = 'Kode Serah Terima',
   hint = 'Berikan kode 4 digit ini ke penerima untuk ditunjukkan ke driver.',
   style,
+  testID,
 }: CodeDisplayProps) {
   const [copied, setCopied] = useState(false);
 
@@ -34,7 +37,7 @@ export function CodeDisplay({
         </Text>
       )}
 
-      <Pressable onPress={handleCopy} style={styles.codeRow}>
+      <Pressable onPress={handleCopy} style={styles.codeRow} testID={testID} accessibilityLabel={`Kode ${code}`}>
         {digits.map((digit, i) => (
           <View key={i} style={styles.digitBox}>
             <Text variant="largeTitle" color={colors.primary} weight="700">

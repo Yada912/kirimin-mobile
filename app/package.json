@@ -29,7 +29,11 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "test:contract": "node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"tests/contract/**/*.test.ts\"",
+    "e2e": "maestro test e2e/flows",
+    "e2e:smoke": "maestro test e2e/flows/01_smoke_screens.yaml"
   },
   "private": true
 }
