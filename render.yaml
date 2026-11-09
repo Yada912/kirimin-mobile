@@ -1,0 +1,21 @@
+# Render Blueprint (optional, for later): Dashboard → New → Blueprint → pick this repo.
+# Free web services sleep after 15 min idle and have a temporary disk, so the SQLite
+# file is wiped on every restart. Fine for a demo; see docs/HOSTING.md for Turso.
+services:
+  - type: web
+    name: kirimin-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: echo "No build step needed"
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SEED_ON_EMPTY
+        value: "true"
