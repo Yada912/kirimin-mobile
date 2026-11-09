@@ -1,6 +1,8 @@
 # Render Blueprint (optional, for later): Dashboard → New → Blueprint → pick this repo.
-# Free web services sleep after 15 min idle and have a temporary disk, so the SQLite
-# file is wiped on every restart. Fine for a demo; see docs/HOSTING.md for Turso.
+# Free web services sleep after 15 min idle and have a temporary disk, so data lives in
+# Turso and photos in Cloudinary. Fill in the three `sync: false` values in the dashboard
+# when Render asks (see docs/HOSTING.md). Without them the server falls back to a local
+# SQLite file and local photos, which are wiped on every restart.
 services:
   - type: web
     name: kirimin-api
@@ -19,3 +21,9 @@ services:
         generateValue: true
       - key: SEED_ON_EMPTY
         value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_AUTH_TOKEN
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false

@@ -26,6 +26,15 @@ export const config = {
   host: env.HOST ?? '0.0.0.0',
   /** SQLite file. Use ":memory:" for throwaway runs (tests do). */
   databasePath: env.DATABASE_PATH === ':memory:' ? ':memory:' : resolveFromServerRoot(env.DATABASE_PATH ?? './data/kirimin.db'),
+  /**
+   * Hosted database (Turso/libSQL), e.g. `libsql://kirimin-you.turso.io`. When set,
+   * it replaces the local SQLite file. See docs/HOSTING.md.
+   */
+  databaseUrl: env.DATABASE_URL || null,
+  databaseAuthToken: env.DATABASE_AUTH_TOKEN || null,
+  /** `cloudinary://<api_key>:<api_secret>@<cloud_name>`. When set, photos go to Cloudinary instead of UPLOAD_DIR. */
+  cloudinaryUrl: env.CLOUDINARY_URL || null,
+  cloudinaryFolder: env.CLOUDINARY_FOLDER || 'kirimin',
   uploadDir: resolveFromServerRoot(env.UPLOAD_DIR ?? './data/uploads'),
   maxUploadBytes: Number(env.MAX_UPLOAD_MB ?? 5) * 1024 * 1024,
   jwtSecret: env.JWT_SECRET ?? DEV_SECRET,

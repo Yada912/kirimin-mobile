@@ -12,6 +12,8 @@
     "start": "node --disable-warning=ExperimentalWarning src/index.ts",
     "db:reset": "node --disable-warning=ExperimentalWarning src/db/reset.ts",
     "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.ts\"",
+    "verify:hosting": "node --disable-warning=ExperimentalWarning src/verifyHosting.ts",
+    "test:libsql": "TEST_DB=libsql node --disable-warning=ExperimentalWarning --test test/features.test.ts test/libsql.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {

@@ -141,7 +141,7 @@ A trip with `repeatDays` is a weekly route. The server publishes each departure 
 | `GET /health` | | `{ ok }` | |
 
 Upload from Expo: `FileSystem.uploadAsync(api + '/uploads', uri, { httpMethod: 'POST', uploadType: FileSystemUploadType.BINARY_CONTENT, headers: { Authorization, 'Content-Type': 'image/jpeg' } })`.
-Uploaded URLs are relative (`/uploads/…`), so prefix them with the API base URL when displaying.
+On the laptop, uploaded URLs are relative (`/uploads/…`), so prefix them with the API base URL when displaying. When hosted with Cloudinary they are absolute (`https://res.cloudinary.com/…`). Prefix only URLs that start with `/`.
 
 Report categories: `damaged`, `lost`, `late`, `wrong_item`, `payment`, `behaviour`, `safety`, `other` (labels in `/meta`). Reports are stored for follow-up in the `reports` table (no admin panel yet). Only the sender and driver of the order may report, and the other party isn't notified.
 
