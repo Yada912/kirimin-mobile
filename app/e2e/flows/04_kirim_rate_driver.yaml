@@ -17,7 +17,7 @@ tags: [mvp]
     text: "Selesai"
     index: 0                  # newest delivered order
 - extendedWaitUntil:
-    visible: "Lacak Pesanan"
+    visible: "Pesanan KRM-.*"
     timeout: 10000
 - assertNotVisible:           # code is hidden once delivered
     id: "handover-code-display"

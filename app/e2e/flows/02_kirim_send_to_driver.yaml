@@ -43,7 +43,7 @@ tags: [mvp]
 
 # S5 Lacak — waiting for Made, and the 4-digit code is shown to the sender
 - extendedWaitUntil:
-    visible: "Lacak Pesanan"
+    visible: "Pesanan KRM-.*"
     timeout: 10000
 - assertVisible: "Menunggu konfirmasi driver"
 - assertVisible:
