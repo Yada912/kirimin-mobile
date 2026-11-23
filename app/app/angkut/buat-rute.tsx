@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, Navigation, Clock, ShieldCheck } from 'lucide-react-native';
+import { MapPin, Navigation, Clock, Crosshair, ArrowUpDown } from 'lucide-react-native';
 import type { Place, PackageSize } from '@kirimin/shared';
 import { PACKAGE_SIZES, PACKAGE_SIZE_INFO } from '@kirimin/shared';
-import { colors, spacing } from '../../src/theme/tokens';
+import { colors, radii, spacing } from '../../src/theme/tokens';
 import {
   Text,
   TopBar,
@@ -15,28 +15,55 @@ import {
   NumericStepper,
   Card,
   MapView,
+  PlacePickerSheet,
 } from '../../src/ui';
 import { useCreateTrip } from '../../src/api/hooks/useApi';
+import { useAuth } from '../../src/auth/AuthContext';
+import { BALI_PLACES, PLACE_BY_ID } from '../../src/constants/places';
 
-const PRESETS: Record<string, Place> = {
-  renon: { label: 'Renon, Denpasar', lat: -8.6726, lng: 115.2335 },
-  sesetan: { label: 'Sesetan, Denpasar', lat: -8.7005, lng: 115.219 },
-  kampus_bukit: { label: 'Kampus Bukit Jimbaran', lat: -8.7983, lng: 115.1716 },
-  kuta: { label: 'Kuta, Badung', lat: -8.723, lng: 115.169 },
-};
+const QUICK_TIMES = ['07:30', '08:00', '12:00', '17:00'];
 
 export default function AngkutBuatRuteScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { mutateAsync: createTrip, isPending } = useCreateTrip();
 
   const [name, setName] = useState('Ke Kampus');
-  const [origin, setOrigin] = useState<Place>(PRESETS.renon);
-  const [destination, setDestination] = useState<Place>(PRESETS.kampus_bukit);
+  const [origin, setOrigin] = useState<Place>(PLACE_BY_ID.renon);
+  const [destination, setDestination] = useState<Place>(PLACE_BY_ID.kampus_bukit);
+  const [selectedStopLabels, setSelectedStopLabels] = useState<string[]>([
+    PLACE_BY_ID.sesetan.label,
+    PLACE_BY_ID.dewa_ruci.label,
+  ]);
   const [departTime, setDepartTime] = useState('08:00');
   const [maxPackages, setMaxPackages] = useState(3);
   const [maxDetourKm, setMaxDetourKm] = useState(2);
   const [acceptedSizes, setAcceptedSizes] = useState<PackageSize[]>(['XS', 'S']);
   const [error, setError] = useState<string | null>(null);
+
+  const [mapSelectionMode, setMapSelectionMode] = useState<'pickup' | 'dropoff' | null>(null);
+  const [pickerTarget, setPickerTarget] = useState<'origin' | 'destination' | null>(null);
+
+  const stopCandidates = useMemo(
+    () =>
+      BALI_PLACES.filter(
+        (p) => p.label !== origin.label && p.label !== destination.label,
+      ).slice(0, 6),
+    [origin.label, destination.label],
+  );
+
+  const selectedStops: Place[] = useMemo(
+    () =>
+      stopCandidates
+        .filter((p) => selectedStopLabels.includes(p.label))
+        .map((p) => ({ label: p.label, lat: p.lat, lng: p.lng })),
+    [stopCandidates, selectedStopLabels],
+  );
+
+  const handleSwap = () => {
+    setOrigin(destination);
+    setDestination(origin);
+  };
 
   const handleSubmit = async () => {
     try {
@@ -45,26 +72,36 @@ export default function AngkutBuatRuteScreen() {
         setError('Nama rute wajib diisi');
         return;
       }
+      if (acceptedSizes.length === 0) {
+        setError('Pilih minimal satu ukuran paket yang diterima');
+        return;
+      }
 
-      // Calculate departure ISO
+      const [hoursRaw, minutesRaw] = departTime.split(':');
+      const hours = Number(hoursRaw);
+      const minutes = Number(minutesRaw);
+      if (Number.isNaN(hours) || Number.isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        setError('Format jam berangkat tidak valid (gunakan HH:MM, misal 08:00)');
+        return;
+      }
+
       const now = new Date();
-      const [hours, minutes] = departTime.split(':').map(Number);
-      now.setHours(hours || 8, minutes || 0, 0, 0);
-      if (now.getTime() < Date.now()) {
+      now.setHours(hours, minutes, 0, 0);
+      if (now.getTime() < Date.now() + 60_000) {
         now.setDate(now.getDate() + 1);
       }
 
       const newTrip = await createTrip({
         name: name.trim(),
         origin,
-        stops: [PRESETS.sesetan],
+        stops: selectedStops,
         destination,
         departAt: now.toISOString(),
         maxPackages,
         maxDetourKm,
         acceptedSizes,
         repeatDays: [1, 2, 3, 4, 5],
-        vehicle: { type: 'motor', plate: 'DK 1101 XL' },
+        vehicle: user?.vehicle || { type: 'motor', plate: 'DK 1101 XL' },
       });
 
       router.replace({ pathname: '/angkut/permintaan/[tripId]', params: { tripId: newTrip.id } });
@@ -75,7 +112,7 @@ export default function AngkutBuatRuteScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Publikasikan Rute (D1-D2)" />
+      <TopBar title="Publikasikan Rute" />
 
       <ScrollView contentContainerStyle={styles.content}>
         {error && (
@@ -86,8 +123,85 @@ export default function AngkutBuatRuteScreen() {
           </Card>
         )}
 
-        {/* Map Preview */}
-        <MapView pickup={origin} dropoff={destination} height={160} style={{ marginBottom: spacing.lg }} />
+        {/* Interactive Map Preview with Stops & Settings */}
+        <View style={{ marginBottom: spacing.lg }}>
+          <MapView
+            pickup={origin}
+            dropoff={destination}
+            stops={selectedStops}
+            height={190}
+            showSettings
+            selectionMode={mapSelectionMode}
+            onSelectLocation={(place, target) => {
+              if (target === 'pickup') setOrigin(place);
+              else setDestination(place);
+            }}
+          />
+
+          <View style={styles.mapActionRow}>
+            <Pressable
+              onPress={() =>
+                setMapSelectionMode((m) => (m === 'pickup' ? null : 'pickup'))
+              }
+              style={[
+                styles.mapActionChip,
+                mapSelectionMode === 'pickup' && styles.mapActionChipActive,
+              ]}
+            >
+              <Crosshair
+                size={13}
+                color={mapSelectionMode === 'pickup' ? '#FFF' : colors.primary}
+              />
+              <Text
+                variant="captionMedium"
+                color={mapSelectionMode === 'pickup' ? '#FFF' : colors.primary}
+                weight="600"
+                style={{ marginLeft: 4 }}
+              >
+                {mapSelectionMode === 'pickup' ? 'Selesai Asal' : 'Tunjuk Asal'}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() =>
+                setMapSelectionMode((m) => (m === 'dropoff' ? null : 'dropoff'))
+              }
+              style={[
+                styles.mapActionChip,
+                mapSelectionMode === 'dropoff' && styles.mapActionChipActiveGreen,
+              ]}
+            >
+              <Crosshair
+                size={13}
+                color={
+                  mapSelectionMode === 'dropoff' ? '#FFF' : colors.semantic.success
+                }
+              />
+              <Text
+                variant="captionMedium"
+                color={
+                  mapSelectionMode === 'dropoff' ? '#FFF' : colors.semantic.success
+                }
+                weight="600"
+                style={{ marginLeft: 4 }}
+              >
+                {mapSelectionMode === 'dropoff' ? 'Selesai Tujuan' : 'Tunjuk Tujuan'}
+              </Text>
+            </Pressable>
+
+            <Pressable onPress={handleSwap} style={styles.swapChip}>
+              <ArrowUpDown size={13} color={colors.text.secondary} />
+              <Text
+                variant="captionMedium"
+                color={colors.text.secondary}
+                weight="600"
+                style={{ marginLeft: 4 }}
+              >
+                Tukar
+              </Text>
+            </Pressable>
+          </View>
+        </View>
 
         {/* Nama Rute */}
         <View style={styles.section}>
@@ -105,24 +219,56 @@ export default function AngkutBuatRuteScreen() {
           <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
             Titik Asal & Tujuan
           </Text>
-          <View style={styles.presetRow}>
-            <Button
-              label={`Asal: ${origin.label}`}
-              variant="outline"
-              size="sm"
-              onPress={() => setOrigin(origin.label.includes('Renon') ? PRESETS.sesetan : PRESETS.renon)}
-            />
-            <Button
-              label={`Tujuan: ${destination.label}`}
-              variant="outline"
-              size="sm"
-              onPress={() =>
-                setDestination(
-                  destination.label.includes('Bukit') ? PRESETS.kuta : PRESETS.kampus_bukit
-                )
-              }
-            />
+          <View style={styles.endpointRow}>
+            <Pressable
+              onPress={() => setPickerTarget('origin')}
+              style={styles.endpointCard}
+            >
+              <View style={styles.endpointHeader}>
+                <MapPin size={14} color={colors.primary} />
+                <Text variant="captionMedium" color={colors.primary} weight="700" style={{ marginLeft: 4 }}>
+                  Asal
+                </Text>
+              </View>
+              <Text variant="calloutSemibold" color={colors.text.primary} numberOfLines={1}>
+                {origin.label}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setPickerTarget('destination')}
+              style={styles.endpointCard}
+            >
+              <View style={styles.endpointHeader}>
+                <MapPin size={14} color={colors.semantic.success} />
+                <Text variant="captionMedium" color={colors.semantic.success} weight="700" style={{ marginLeft: 4 }}>
+                  Tujuan
+                </Text>
+              </View>
+              <Text variant="calloutSemibold" color={colors.text.primary} numberOfLines={1}>
+                {destination.label}
+              </Text>
+            </Pressable>
           </View>
+        </View>
+
+        {/* Titik Singgah (Opsional) */}
+        <View style={styles.section}>
+          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
+            Lewat Titik Singgah (Opsional)
+          </Text>
+          <Text variant="caption" color={colors.text.secondary} style={{ marginBottom: spacing.xs }}>
+            Membantu sistem mencocokkan lebih banyak paket di jalur Anda
+          </Text>
+          <ChipGroup<string>
+            items={stopCandidates.map((p) => ({
+              value: p.label,
+              label: p.label.split(',')[0],
+            }))}
+            value={selectedStopLabels}
+            onChange={setSelectedStopLabels}
+            multiSelect
+          />
         </View>
 
         {/* Jam Keberangkatan */}
@@ -135,6 +281,13 @@ export default function AngkutBuatRuteScreen() {
             leftElement={<Clock size={18} color={colors.text.muted} />}
             helper="Format 24 jam (misal 08:30)"
           />
+          <View style={{ marginTop: spacing.xs }}>
+            <ChipGroup<string>
+              items={QUICK_TIMES.map((t) => ({ value: t, label: t }))}
+              value={departTime}
+              onChange={setDepartTime}
+            />
+          </View>
         </View>
 
         {/* Kapasitas Paket */}
@@ -188,6 +341,17 @@ export default function AngkutBuatRuteScreen() {
           onPress={handleSubmit}
         />
       </View>
+
+      <PlacePickerSheet
+        visible={pickerTarget !== null}
+        onClose={() => setPickerTarget(null)}
+        title={pickerTarget === 'origin' ? 'Pilih Titik Asal' : 'Pilih Titik Tujuan'}
+        selected={pickerTarget === 'origin' ? origin : destination}
+        onSelect={(place) => {
+          if (pickerTarget === 'origin') setOrigin(place);
+          else if (pickerTarget === 'destination') setDestination(place);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -205,14 +369,62 @@ const styles = StyleSheet.create({
     backgroundColor: colors.semantic.dangerLight,
     marginBottom: spacing.md,
   },
+  mapActionRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  mapActionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: radii.full,
+    backgroundColor: colors.primaryLight,
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
+  },
+  mapActionChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  mapActionChipActiveGreen: {
+    backgroundColor: colors.semantic.success,
+    borderColor: colors.semantic.success,
+  },
+  swapChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: radii.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   section: {
     marginBottom: spacing.lg,
   },
   sectionTitle: {
     marginBottom: spacing.xs,
   },
-  presetRow: {
-    gap: spacing.xs,
+  endpointRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  endpointCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+  },
+  endpointHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   bottomBar: {
     position: 'absolute',
@@ -225,4 +437,3 @@ const styles = StyleSheet.create({
     borderTopColor: colors.borderLight,
   },
 });
-

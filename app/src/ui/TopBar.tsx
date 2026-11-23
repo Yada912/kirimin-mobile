@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   right: {
-    width: touchTarget.minWidth,
+    minWidth: touchTarget.minWidth,
     alignItems: 'flex-end',
     justifyContent: 'center',
   },

@@ -65,7 +65,7 @@ export default function KirimBatalScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Batalkan Pesanan (S7)" />
+      <TopBar title="Batalkan Pesanan" />
 
       <ScrollView contentContainerStyle={styles.content}>
         {cancelError && (

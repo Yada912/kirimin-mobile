@@ -57,7 +57,7 @@ export default function AngkutPermintaanScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar
-        title={trip?.name ? `Permintaan: ${trip.name}` : 'Permintaan Masuk (D3)'}
+        title={trip?.name ? `Permintaan: ${trip.name}` : 'Permintaan Masuk'}
         rightAction={
           trip?.slotsUsed && trip.slotsUsed > 0 ? (
             <Button

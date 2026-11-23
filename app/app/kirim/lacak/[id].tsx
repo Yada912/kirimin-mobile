@@ -126,7 +126,8 @@ export default function LacakPesananScreen() {
             pickup={order.pickup}
             dropoff={order.dropoff}
             driverLocation={driverGps}
-            height={200}
+            height={210}
+            showSettings
           />
         </View>
 
@@ -207,10 +208,19 @@ export default function LacakPesananScreen() {
           </View>
         </Card>
 
-        {/* Rincian Biaya */}
+        {/* Rincian Biaya & Pembayaran */}
         {order.price && (
           <Card variant="outlined" padding="md" style={styles.sectionCard}>
             <PriceRow fee={order.price.fee} serviceFee={order.price.serviceFee} total={order.price.total} />
+            {order.payment?.status === 'unpaid' && !isCancelled && (
+              <Button
+                label="Bayar Sekarang (QRIS / E-Wallet / VA)"
+                variant="outline"
+                size="sm"
+                onPress={() => router.push({ pathname: '/bayar/[orderId]', params: { orderId: order.id } })}
+                style={{ marginTop: spacing.md }}
+              />
+            )}
           </Card>
         )}
 
@@ -239,7 +249,7 @@ export default function LacakPesananScreen() {
         {/* Actions based on state */}
         {isCompleted ? (
           <Button
-            label="Beri Rating Driver (X3)"
+            label="Beri Rating Driver"
             variant="primary"
             size="lg"
             leftIcon={<Star size={18} color="#FFF" />}
@@ -248,7 +258,7 @@ export default function LacakPesananScreen() {
           />
         ) : canCancel ? (
           <Button
-            label="Batalkan Pesanan (S7)"
+            label="Batalkan Pesanan"
             variant="ghost"
             size="md"
             onPress={() => router.push({ pathname: '/kirim/batal/[id]', params: { id: order.id } })}

@@ -42,7 +42,7 @@ export default function KirimMenungguScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Menunggu Driver (S6)" />
+      <TopBar title="Menunggu Pengemudi" />
 
       <View style={styles.content}>
         <Card variant="elevated" padding="xl" style={styles.card}>

@@ -27,6 +27,7 @@ import {
 } from '../../../src/api/hooks/useApi';
 import { api } from '../../../src/api/client';
 import { formatTime } from '../../../src/utils/format';
+import { interpolateAlongRoute } from '../../../src/constants/places';
 
 export default function AngkutJalanScreen() {
   const router = useRouter();
@@ -40,20 +41,27 @@ export default function AngkutJalanScreen() {
   const { mutateAsync: completeTrip, isPending: isCompleting } = useCompleteTrip();
 
   const [locationPinging, setLocationPinging] = useState(false);
+  const [liveGps, setLiveGps] = useState<{ lat: number; lng: number } | null>(null);
+  const progressRef = React.useRef(0.05);
 
-  // Send GPS location update every 10 seconds while trip is ongoing (D5 requirement)
+  // Send route-interpolated GPS location update every 8 seconds while trip is ongoing
   useEffect(() => {
     if (!manifest?.trip || manifest.trip.status !== 'ongoing') return;
+
+    const waypoints = [
+      manifest.trip.origin,
+      ...(manifest.trip.stops || []),
+      manifest.trip.destination,
+    ];
 
     let timer: any = null;
     const sendGps = async () => {
       try {
         setLocationPinging(true);
-        // Default simulated commuter coordinates Renon -> Bukit
-        await api.post(`/trips/${tripId}/location`, {
-          lat: -8.72 + (Math.random() - 0.5) * 0.01,
-          lng: 115.2 + (Math.random() - 0.5) * 0.01,
-        });
+        const pt = interpolateAlongRoute(waypoints, progressRef.current);
+        setLiveGps(pt);
+        await api.post(`/trips/${tripId}/location`, pt);
+        progressRef.current = progressRef.current >= 0.95 ? 0.1 : progressRef.current + 0.1;
       } catch (err) {
         console.warn('GPS location ping error:', err);
       } finally {
@@ -62,7 +70,7 @@ export default function AngkutJalanScreen() {
     };
 
     sendGps();
-    timer = setInterval(sendGps, 10000);
+    timer = setInterval(sendGps, 8000);
 
     return () => {
       if (timer) clearInterval(timer);
@@ -195,7 +203,9 @@ export default function AngkutJalanScreen() {
             pickup={trip.origin}
             dropoff={trip.destination}
             stops={trip.stops}
-            height={180}
+            driverLocation={liveGps || trip.lastLocation || null}
+            height={190}
+            showSettings
           />
         </View>
 
@@ -249,7 +259,7 @@ export default function AngkutJalanScreen() {
                 <View style={styles.actionRow}>
                   {o.status === 'accepted' && (
                     <Button
-                      label="Konfirmasi Dijemput (X2)"
+                      label="Konfirmasi Dijemput"
                       variant="primary"
                       size="sm"
                       loading={isPicking}
@@ -269,7 +279,7 @@ export default function AngkutJalanScreen() {
 
                   {o.status === 'arrived' && (
                     <Button
-                      label="Masukkan Kode Serah Terima (X2)"
+                      label="Masukkan Kode Serah Terima"
                       variant="primary"
                       size="sm"
                       onPress={() =>

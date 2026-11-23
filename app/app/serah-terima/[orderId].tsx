@@ -129,7 +129,7 @@ export default function SerahTerimaScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Serah Terima Paket (X2)" />
+      <TopBar title="Serah Terima Paket" />
 
       <ScrollView contentContainerStyle={styles.content}>
         {deliverError && (

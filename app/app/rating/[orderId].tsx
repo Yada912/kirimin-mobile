@@ -59,7 +59,7 @@ export default function RatingScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Beri Penilaian (X3)" />
+      <TopBar title="Beri Penilaian" />
 
       <ScrollView contentContainerStyle={styles.content}>
         {rateError && (

@@ -88,7 +88,7 @@ export default function KirimPaketScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Detail Paket (S1)" />
+      <TopBar title="Detail Paket" />
       <StepHeader
         steps={['Paket', 'Rute', 'Driver', 'Konfirmasi']}
         currentStep={1}

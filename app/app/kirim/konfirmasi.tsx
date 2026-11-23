@@ -40,8 +40,10 @@ export default function KirimKonfirmasiScreen() {
       setError(null);
       const newOrder = await createOrder(orderPayload(draft, paymentMethod));
 
-      // If sent with tripId -> S5 lacak; if open request -> S6 menunggu
-      if (tripId) {
+      // Digital payment methods open the interactive payment screen first
+      if (paymentMethod !== 'cash') {
+        router.replace({ pathname: '/bayar/[orderId]', params: { orderId: newOrder.id } });
+      } else if (tripId) {
         router.replace({ pathname: '/kirim/lacak/[id]', params: { id: newOrder.id } });
       } else {
         router.replace({ pathname: '/kirim/menunggu/[id]', params: { id: newOrder.id } });
@@ -53,7 +55,7 @@ export default function KirimKonfirmasiScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Tinjau & Konfirmasi (S4)" />
+      <TopBar title="Tinjau & Konfirmasi" />
       <StepHeader
         steps={['Paket', 'Rute', 'Driver', 'Konfirmasi']}
         currentStep={4}

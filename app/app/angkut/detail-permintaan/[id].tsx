@@ -80,7 +80,7 @@ export default function AngkutDetailPermintaanScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Detail Permintaan Masuk (D4)" />
+      <TopBar title="Detail Permintaan" />
 
       <ScrollView contentContainerStyle={styles.content}>
         {actionError && (
@@ -114,7 +114,7 @@ export default function AngkutDetailPermintaanScreen() {
 
         {/* Map Preview */}
         <View style={styles.mapWrapper}>
-          <MapView pickup={order.pickup} dropoff={order.dropoff} height={180} />
+          <MapView pickup={order.pickup} dropoff={order.dropoff} height={190} showSettings />
         </View>
 
         {/* Earning Card */}
