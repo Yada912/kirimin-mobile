@@ -29,3 +29,4 @@ export * from './BrandLogo';
 
 export * from './ServerSettings';
 export * from './Artwork';
+export * from './motion';

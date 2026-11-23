@@ -69,6 +69,7 @@ export default function AngkutRuteScreen() {
         />
       ) : !trips || trips.length === 0 ? (
         <EmptyState
+          art="route"
           title={tab === 'active' ? 'Belum ada rute' : 'Belum ada riwayat'}
           description={
             tab === 'active'
@@ -105,12 +106,12 @@ export default function AngkutRuteScreen() {
               style={styles.tripCard}
             >
               <View style={styles.cardHeader}>
-                <View>
-                  <Text variant="headline" color={colors.text.primary} weight="700">
+                <View style={{ flex: 1, marginRight: spacing.sm }}>
+                  <Text variant="headline" color={colors.text.primary} weight="700" numberOfLines={1}>
                     {item.name}
                   </Text>
                   <Text variant="caption" color={colors.text.muted}>
-                    {formatDate(item.departAt)} • {formatTime(item.departAt)}
+                    {formatDate(item.departAt)}, {formatTime(item.departAt)}
                   </Text>
                 </View>
                 <StatusPill status={item.status} />
@@ -118,23 +119,23 @@ export default function AngkutRuteScreen() {
 
               <View style={styles.routeContainer}>
                 <Text variant="calloutSemibold" color={colors.text.primary}>
-                  {item.origin.label} → {item.destination.label}
+                  {item.origin.label} ke {item.destination.label}
                 </Text>
                 {item.stops && item.stops.length > 0 && (
                   <Text variant="caption" color={colors.text.secondary} style={{ marginTop: 2 }}>
-                    Lewat: {item.stops.map((s) => s.label).join(', ')}
+                    Lewat {item.stops.map((s) => s.label.split(',')[0]).join(', ')}
                   </Text>
                 )}
               </View>
 
               <View style={styles.cardFooter}>
-                <Text variant="callout" color={colors.text.secondary}>
-                  Kapasitas: <Text variant="calloutSemibold">{item.slotsUsed}/{item.maxPackages} paket</Text>
+                <Text variant="callout" color={colors.text.secondary} numberOfLines={1} style={{ flex: 1, marginRight: spacing.sm }}>
+                  <Text variant="calloutSemibold">{item.slotsUsed}/{item.maxPackages}</Text> paket
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   {item.status === 'published' && (
                     <Button
-                      label="Edit"
+                      label="Ubah"
                       variant="outline"
                       size="sm"
                       fullWidth={false}
@@ -147,7 +148,7 @@ export default function AngkutRuteScreen() {
                     />
                   )}
                   <Button
-                    label={item.status === 'ongoing' ? 'Navigasi' : 'Permintaan'}
+                    label={item.status === 'ongoing' ? 'Navigasi' : 'Lihat'}
                     variant="primary"
                     size="sm"
                     fullWidth={false}

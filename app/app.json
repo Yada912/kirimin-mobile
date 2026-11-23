@@ -3,7 +3,7 @@
     "name": "Kirimin",
     "slug": "kirimin",
     "scheme": "kirimin",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -35,7 +35,7 @@
     ],
     "android": {
       "package": "com.kirimin.app",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "INTERNET",
         "ACCESS_FINE_LOCATION",

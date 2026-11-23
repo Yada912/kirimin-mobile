@@ -73,6 +73,7 @@ export default function AngkutPermintaanScreen() {
         />
       ) : !requests || requests.length === 0 ? (
         <EmptyState
+          art="route"
           title="Belum ada permintaan"
           description="Pengirim yang searah dengan rutemu akan muncul di sini."
           icon={<Inbox size={48} color={colors.text.muted} />}

@@ -133,7 +133,7 @@ export default function KelolaPresetScreen() {
       });
     } else {
       router.push({
-        pathname: '/kirim/paket',
+        pathname: '/kirim/rute',
         params: {
           pickupPreset: preset.pickup.label,
           dropoffPreset: preset.dropoff.label,

@@ -1,5 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import { Animated, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import { usePressScale } from './motion';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 import { colors, radii, spacing, touchTarget } from '../theme/tokens';
 import { Text } from './Text';
 
@@ -12,14 +15,18 @@ export interface ChipProps {
 }
 
 export function Chip({ label, sublabel, selected = false, onPress, style }: ChipProps) {
+  const { scale, handlers } = usePressScale(0.94);
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
-      style={({ pressed }) => [
+      {...handlers}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      style={[
         styles.chip,
         selected ? styles.selectedChip : styles.unselectedChip,
-        pressed && { opacity: 0.8 },
         style,
+        { transform: [{ scale }] },
       ]}
     >
       <Text
@@ -37,7 +44,7 @@ export function Chip({ label, sublabel, selected = false, onPress, style }: Chip
           {sublabel}
         </Text>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 

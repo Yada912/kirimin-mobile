@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
-import { EmptyParcelArt } from './Artwork';
+import { BellArt, ChatArt, EmptyParcelArt, RouteMapArt } from './Artwork';
+import { PopIn } from './motion';
 import { colors, spacing } from '../theme/tokens';
 import { Text } from './Text';
 import { Button } from './Button';
@@ -9,6 +10,8 @@ export interface EmptyStateProps {
   title: string;
   description?: string;
   icon?: React.ReactNode;
+  /** Which illustration to show. */
+  art?: 'parcel' | 'route' | 'bell' | 'chat';
   actionLabel?: string;
   onAction?: () => void;
   style?: ViewStyle;
@@ -18,6 +21,7 @@ export function EmptyState({
   title,
   description,
   icon,
+  art = 'parcel',
   actionLabel,
   onAction,
   style,
@@ -25,9 +29,9 @@ export function EmptyState({
   return (
     <View style={[styles.container, style]}>
       {/* Same illustration everywhere so empty screens feel like part of the brand. */}
-      <View style={styles.art}>
-        <EmptyParcelArt size={120} />
-      </View>
+      <PopIn style={styles.art}>
+        {art === 'route' ? <RouteMapArt size={120} /> : art === 'bell' ? <BellArt size={120} /> : art === 'chat' ? <ChatArt size={120} /> : <EmptyParcelArt size={120} />}
+      </PopIn>
 
       <Text variant="headline" color={colors.text.primary} weight="700" align="center" style={styles.title}>
         {title}

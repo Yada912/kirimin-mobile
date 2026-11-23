@@ -68,6 +68,7 @@ export default function ChatScreen() {
           <ErrorState message={(error as any)?.message || 'Gagal memuat pesan'} onRetry={() => refetch()} />
         ) : !messages || messages.length === 0 ? (
           <EmptyState
+            art="chat"
             title="Belum ada pesan"
             description={`Kirim pesan ke ${otherPersonName} untuk koordinasi penjemputan atau pengantaran.`}
           />

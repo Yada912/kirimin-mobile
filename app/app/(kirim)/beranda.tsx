@@ -6,7 +6,7 @@ import { ORDER_STATUS_LABELS, TRACKING_STEPS } from '@kirimin/shared';
 import type { OrderStatus } from '@kirimin/shared';
 import { MapPin, Search, Repeat, ChevronRight, ShieldCheck, Package } from '../../src/ui/icons';
 import { colors, radii, spacing, shadows } from '../../src/theme/tokens';
-import { Text, SkeletonCard, Avatar, SearahScene } from '../../src/ui';
+import { Text, SkeletonCard, Avatar, SearahScene, HandoverArt } from '../../src/ui';
 import { useAuth } from '../../src/auth/AuthContext';
 import { useOrders } from '../../src/api/hooks/useApi';
 import { useRoutePresets } from '../../src/features/presets/useRoutePresets';
@@ -48,16 +48,16 @@ export default function KirimBerandaScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.push('/(kirim)/profil')} style={styles.userRow} hitSlop={6}>
+          <Pressable onPress={() => router.push('/(kirim)/profil')} style={[styles.userRow, { flex: 1, marginRight: spacing.sm }]} hitSlop={6}>
             <Avatar name={user?.name || 'Pengirim'} url={user?.avatarUrl} size={40} />
-            <Text variant="title" color={colors.laut} style={{ marginLeft: spacing.sm }}>
+            <Text variant="title" color={colors.laut} style={{ marginLeft: spacing.sm, flexShrink: 1 }} numberOfLines={1}>
               Halo, {firstName}
             </Text>
           </Pressable>
           <Pressable onPress={() => router.push('/(auth)/pilih-peran')} style={styles.roleSwitch} hitSlop={6}>
             <Repeat size={14} color={colors.primary} />
             <Text variant="captionMedium" color={colors.primary} weight="700" style={{ marginLeft: 6 }}>
-              Ganti ke pengemudi
+              Pengemudi
             </Text>
           </Pressable>
         </View>
@@ -157,9 +157,7 @@ export default function KirimBerandaScreen() {
         )}
 
         <View style={styles.safetyBanner}>
-          <View style={styles.safetyIcon}>
-            <ShieldCheck size={28} color={colors.laut} />
-          </View>
+          <HandoverArt width={92} height={64} />
           <View style={{ flex: 1, marginLeft: spacing.md }}>
             <Text variant="headline" color={colors.laut}>
               Paket hanya pindah tangan dengan kode

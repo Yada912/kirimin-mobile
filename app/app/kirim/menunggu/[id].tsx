@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Clock, CheckCircle } from '../../../src/ui/icons';
 import { colors, radii, spacing } from '../../../src/theme/tokens';
-import { Text, TopBar, Card, Button, StatusPill, SkeletonCard, ErrorState } from '../../../src/ui';
+import { Text, TopBar, Card, Button, SkeletonCard, ErrorState, SearchingArt, Pulse } from '../../../src/ui';
 import { useOrder } from '../../../src/api/hooks/useApi';
 
 export default function KirimMenungguScreen() {
@@ -46,18 +46,17 @@ export default function KirimMenungguScreen() {
 
       <View style={styles.content}>
         <Card variant="elevated" padding="xl" style={styles.card}>
-          <View style={styles.iconCircle}>
-            <Clock size={36} color={colors.primary} />
+          <View style={styles.searching}>
+            <Pulse size={170} color={colors.primary} />
+            <SearchingArt size={140} />
           </View>
 
           <Text variant="title" color={colors.text.primary} weight="700" align="center" style={styles.title}>
             Mencari pengemudi yang searah
           </Text>
 
-          <StatusPill status={order.status} style={{ alignSelf: 'center', marginBottom: spacing.md }} />
-
           <Text variant="callout" color={colors.text.secondary} align="center" style={styles.desc}>
-            Permintaan pesanan {order.code} telah dipublikasikan ke jaringan pengemudi Kirimin di rute:
+            Semua pengemudi yang lewat rute ini sudah kami kabari.
           </Text>
 
           <View style={styles.routeBox}>
@@ -65,7 +64,7 @@ export default function KirimMenungguScreen() {
               {order.pickup.label}
             </Text>
             <Text variant="caption" color={colors.text.muted} align="center">
-              menuju
+              ke
             </Text>
             <Text variant="calloutSemibold" color={colors.text.primary} align="center">
               {order.dropoff.label}
@@ -73,8 +72,7 @@ export default function KirimMenungguScreen() {
           </View>
 
           <View style={styles.indicatorRow}>
-            <ActivityIndicator size="small" color={colors.primary} />
-            <Text variant="caption" color={colors.primary} style={{ marginLeft: 8 }}>
+            <Text variant="caption" color={colors.primary}>
               Biasanya kurang dari 10 menit
             </Text>
           </View>
@@ -114,6 +112,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.surface,
     marginTop: spacing.xl,
+  },
+  searching: {
+    width: 170,
+    height: 170,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
   },
   iconCircle: {
     width: 72,

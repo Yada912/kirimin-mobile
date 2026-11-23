@@ -61,11 +61,11 @@ export default function KirimAktivitasScreen() {
           title={tab === 'active' ? 'Belum ada kiriman berjalan' : 'Belum ada riwayat'}
           description={
             tab === 'active'
-              ? 'Anda belum memiliki paket yang sedang dikirim saat ini.'
-              : 'Semua paket yang telah selesai atau dibatalkan akan muncul di sini.'
+              ? 'Paket yang sedang kamu kirim muncul di sini.'
+              : 'Paket yang sudah selesai atau dibatalkan muncul di sini.'
           }
-          actionLabel={tab === 'active' ? 'Kirim Paket Sekarang' : undefined}
-          onAction={() => router.push('/kirim/paket')}
+          actionLabel={tab === 'active' ? 'Kirim paket' : undefined}
+          onAction={() => router.push('/kirim/rute')}
         />
       ) : (
         <FlatList
@@ -87,7 +87,7 @@ export default function KirimAktivitasScreen() {
               style={styles.orderCard}
             >
               <View style={styles.cardHeader}>
-                <View>
+                <View style={{ flex: 1, marginRight: spacing.sm }}>
                   <Text variant="headline" color={colors.text.primary} weight="700">
                     {item.code}
                   </Text>
@@ -100,22 +100,15 @@ export default function KirimAktivitasScreen() {
 
               <View style={styles.routeContainer}>
                 <View style={styles.routeRow}>
-                  <Text variant="calloutSemibold" color={colors.text.primary} numberOfLines={1}>
-                    {item.pickup.label}
-                  </Text>
-                  <Text variant="callout" color={colors.text.muted} style={{ marginHorizontal: 6 }}>
-                    →
-                  </Text>
-                  <Text variant="calloutSemibold" color={colors.text.primary} numberOfLines={1}>
-                    {item.dropoff.label}
+                  <Text variant="calloutSemibold" color={colors.text.primary} numberOfLines={1} style={{ flex: 1 }}>
+                    {item.pickup.label} ke {item.dropoff.label}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.cardFooter}>
-                <Text variant="callout" color={colors.text.secondary}>
-                  Ukuran: <Text variant="calloutSemibold">{item.size}</Text>
-                  {item.driver ? ` • Driver: ${item.driver.name}` : ' • Menunggu Driver'}
+                <Text variant="callout" color={colors.text.secondary} numberOfLines={1} style={{ flex: 1, marginRight: spacing.sm }}>
+                  {item.driver ? `Dibawa ${item.driver.name}` : 'Belum ada pengemudi'}
                 </Text>
                 <Text variant="headline" color={colors.primary} weight="700">
                   {formatRupiah(item.price?.total)}

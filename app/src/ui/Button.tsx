@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Animated,
   Pressable,
   ActivityIndicator,
   StyleSheet,
@@ -10,6 +11,9 @@ import {
 } from 'react-native';
 import { colors, radii, spacing, touchTarget, typography } from '../theme/tokens';
 import { Text } from './Text';
+import { usePressScale } from './motion';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
 export type ButtonSize = 'lg' | 'md' | 'sm';
@@ -46,6 +50,8 @@ export function Button({
   testID,
 }: ButtonProps) {
   const isInteractive = !disabled && !loading;
+  const [pressed, setPressed] = React.useState(false);
+  const { scale, handlers } = usePressScale(0.97);
 
   // Background and border colors by variant
   const getContainerStyle = (pressed: boolean): ViewStyle => {
@@ -116,9 +122,17 @@ export function Button({
   };
 
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={isInteractive ? onPress : undefined}
-      style={({ pressed }) => [getContainerStyle(pressed), style]}
+      onPressIn={() => {
+        setPressed(true);
+        if (isInteractive) handlers.onPressIn?.();
+      }}
+      onPressOut={() => {
+        setPressed(false);
+        handlers.onPressOut?.();
+      }}
+      style={[getContainerStyle(pressed), style, { transform: [{ scale }] }]}
       accessibilityRole="button"
       testID={testID}
       accessibilityState={{ disabled: !isInteractive }}
@@ -135,13 +149,15 @@ export function Button({
             variant={size === 'sm' ? 'captionMedium' : 'headline'}
             color={getLabelColor()}
             weight="700"
+            numberOfLines={1}
+            style={{ flexShrink: 1 }}
           >
             {label}
           </Text>
           {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
         </View>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -150,6 +166,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    maxWidth: '100%',
   },
   iconLeft: {
     marginRight: spacing.sm,

@@ -100,7 +100,7 @@ export default function LoginScreen() {
           {/* Quick Demo Accounts Strip for effortless testing */}
           <Card variant="flat" padding="md" style={styles.demoCard}>
             <Text variant="captionMedium" color={colors.text.secondary} weight="700" style={{ marginBottom: spacing.xs }}>
-              Coba pakai akun contoh
+              Coba pakai akun contoh: pengirim atau pengemudi
             </Text>
             <View style={styles.demoRow}>
               <Pressable
@@ -113,7 +113,7 @@ export default function LoginScreen() {
               >
                 <Package size={14} color={colors.primary} />
                 <Text variant="captionMedium" color={colors.primary} weight="700" style={{ marginLeft: 5 }}>
-                  Wayan (pengirim)
+                  Wayan
                 </Text>
               </Pressable>
 
@@ -127,7 +127,7 @@ export default function LoginScreen() {
               >
                 <Bike size={14} color={colors.driverDeep} />
                 <Text variant="captionMedium" color={colors.driverDeep} weight="700" style={{ marginLeft: 5 }}>
-                  Made (pengemudi)
+                  Made
                 </Text>
               </Pressable>
             </View>

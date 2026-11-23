@@ -91,12 +91,12 @@ export default function AngkutAktivitasScreen() {
               style={styles.orderCard}
             >
               <View style={styles.cardHeader}>
-                <View>
+                <View style={{ flex: 1, marginRight: spacing.sm }}>
                   <Text variant="headline" color={colors.text.primary} weight="700">
                     {item.code}
                   </Text>
                   <Text variant="caption" color={colors.text.muted}>
-                    Pengirim: {item.sender.name}
+                    Dari {item.sender.name}
                   </Text>
                 </View>
                 <StatusPill status={item.status} />
@@ -104,16 +104,16 @@ export default function AngkutAktivitasScreen() {
 
               <View style={styles.routeContainer}>
                 <Text variant="calloutSemibold" color={colors.text.primary}>
-                  {item.pickup.label} → {item.dropoff.label}
+                  {item.pickup.label} ke {item.dropoff.label}
                 </Text>
                 <Text variant="caption" color={colors.text.secondary} style={{ marginTop: 2 }}>
-                  Penerima: {item.recipient.name} ({item.recipient.phone})
+                  Untuk {item.recipient.name} ({item.recipient.phone})
                 </Text>
               </View>
 
               <View style={styles.cardFooter}>
                 <Text variant="callout" color={colors.text.secondary}>
-                  Ukuran: <Text variant="calloutSemibold">{item.size}</Text>
+                  Ukuran <Text variant="calloutSemibold">{item.size}</Text>
                 </Text>
                 <View style={styles.earningRow}>
                   <Text variant="caption" color={colors.text.muted}>

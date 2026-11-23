@@ -85,31 +85,31 @@ export default function KirimDriverScreen() {
           <Avatar name={match.trip.driver.name} url={match.trip.driver.avatarUrl} size={48} />
           <View style={styles.driverDetails}>
             <View style={styles.nameRow}>
-              <Text variant="headline" color={colors.text.primary} weight="700">
+              <Text variant="headline" color={colors.text.primary} weight="700" numberOfLines={1} style={{ flexShrink: 1 }}>
                 {match.trip.driver.name}
               </Text>
               {match.trip.driver.verified && (
                 <ShieldCheck size={16} color={colors.semantic.success} style={{ marginLeft: 4 }} />
               )}
             </View>
-            <Text variant="caption" color={colors.text.secondary}>
+            <Text variant="caption" color={colors.text.secondary} numberOfLines={1}>
               ★ {match.trip.driver.ratingAvg?.toFixed(1) || '5.0'}  ({match.trip.driver.deliveriesCount}x antar)  {match.trip.vehicle.plate}
             </Text>
+            <View
+              style={[
+                styles.matchBadge,
+                { backgroundColor: isDirect ? colors.primaryLight : colors.semantic.warningLight },
+              ]}
+            >
+              <Text
+                variant="captionMedium"
+                color={isDirect ? colors.primary : colors.semantic.warning}
+                numberOfLines={1}
+              >
+                {isDirect ? 'Searah' : `Belok ${formatDetour(match.detourKm, match.detourMinutes)}`}
+              </Text>
+            </View>
           </View>
-        </View>
-
-        <View
-          style={[
-            styles.matchBadge,
-            { backgroundColor: isDirect ? colors.primaryLight : colors.semantic.warningLight },
-          ]}
-        >
-          <Text
-            variant="captionMedium"
-            color={isDirect ? colors.primary : colors.semantic.warning}
-          >
-            {isDirect ? 'Searah' : `Belok ${formatDetour(match.detourKm, match.detourMinutes)}`}
-          </Text>
         </View>
       </View>
 
@@ -195,6 +195,7 @@ export default function KirimDriverScreen() {
             {/* If no matches found */}
             {totalMatches === 0 && (
               <EmptyState
+                art="route"
                 title="Belum ada yang lewat sana"
                 description="Belum ada pengemudi yang terjadwal lewat rute ini. Kamu tetap bisa mengirim permintaan ke semua pengemudi."
                 icon={<Bike size={44} color={colors.text.muted} />}
@@ -264,10 +265,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   matchBadge: {
+    alignSelf: 'flex-start',
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: radii.full,
-    marginLeft: spacing.sm,
+    marginTop: 6,
   },
   timeRow: {
     flexDirection: 'row',

@@ -16,6 +16,8 @@ import {
   ErrorState,
   HandoverSparkArt,
   SuccessBurstArt,
+  PopIn,
+  HandoverArt,
 } from '../../src/ui';
 import { useOrder, useDeliverOrder } from '../../src/api/hooks/useApi';
 import { uploadImage } from '../../src/api/client';
@@ -103,7 +105,9 @@ export default function SerahTerimaScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.successContainer}>
-          <SuccessBurstArt size={120} />
+          <PopIn>
+            <SuccessBurstArt size={120} />
+          </PopIn>
           <Text variant="largeTitle" color={colors.text.primary} weight="700" align="center" style={styles.successTitle}>
             Paket sudah diserahkan
           </Text>
@@ -157,7 +161,7 @@ export default function SerahTerimaScreen() {
 
         {/* Code Input Section */}
         <Card variant="elevated" padding="lg" style={styles.inputCard}>
-          <HandoverSparkArt width={64} height={64} />
+          <HandoverArt width={150} height={104} />
           <Text variant="title" color={colors.text.primary} weight="700" align="center" style={styles.cardHeading}>
             Masukkan kode dari penerima
           </Text>

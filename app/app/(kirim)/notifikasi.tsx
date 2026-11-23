@@ -52,6 +52,7 @@ export default function NotifikasiScreen() {
         />
       ) : items.length === 0 ? (
         <EmptyState
+          art="bell"
           title="Belum ada notifikasi"
           description="Kabar soal paket, perjalanan, dan pesan baru muncul di sini."
           icon={<Bell size={44} color={colors.text.muted} />}

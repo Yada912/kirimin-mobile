@@ -35,16 +35,16 @@ export default function AngkutBerandaScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.push('/(angkut)/profil')} style={styles.userRow} hitSlop={6}>
+          <Pressable onPress={() => router.push('/(angkut)/profil')} style={[styles.userRow, { flex: 1, marginRight: spacing.sm }]} hitSlop={6}>
             <Avatar name={user?.name || 'Pengemudi'} url={user?.avatarUrl} size={40} />
-            <Text variant="title" color={colors.driverDeep} style={{ marginLeft: spacing.sm }}>
+            <Text variant="title" color={colors.driverDeep} style={{ marginLeft: spacing.sm, flexShrink: 1 }} numberOfLines={1}>
               Halo, {firstName}
             </Text>
           </Pressable>
           <Pressable onPress={() => router.push('/(auth)/pilih-peran')} style={styles.roleSwitch} hitSlop={6}>
             <Repeat size={14} color={colors.sawah} />
             <Text variant="captionMedium" color={colors.sawah} weight="700" style={{ marginLeft: 6 }}>
-              Ganti ke pengirim
+              Pengirim
             </Text>
           </Pressable>
         </View>

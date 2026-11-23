@@ -15,10 +15,20 @@ export interface StatusPillProps {
   style?: ViewStyle;
 }
 
+/** Short pill text; the full sentence (ORDER_STATUS_LABELS) is used in headings. */
+const SHORT_ORDER_LABELS: Partial<Record<OrderStatus, string>> = {
+  open: 'Cari pengemudi',
+  requested: 'Menunggu',
+  declined: 'Ditolak',
+  in_transit: 'Di jalan',
+  cancelled: 'Batal',
+};
+
 export function StatusPill({ status, customLabel, style }: StatusPillProps) {
   const isTripStatus = status in TRIP_STATUS_LABELS;
   const label =
     customLabel ||
+    (!isTripStatus && SHORT_ORDER_LABELS[status as OrderStatus]) ||
     (isTripStatus
       ? TRIP_STATUS_LABELS[status as TripStatus]
       : ORDER_STATUS_LABELS[status as OrderStatus]) ||
@@ -52,7 +62,7 @@ export function StatusPill({ status, customLabel, style }: StatusPillProps) {
 
   return (
     <View style={[styles.pill, { backgroundColor: bg }, style]}>
-      <Text variant="captionMedium" color={text}>
+      <Text variant="captionMedium" color={text} numberOfLines={1}>
         {label}
       </Text>
     </View>
@@ -61,6 +71,8 @@ export function StatusPill({ status, customLabel, style }: StatusPillProps) {
 
 const styles = StyleSheet.create({
   pill: {
+    flexShrink: 1,
+    maxWidth: 160,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
     borderRadius: radii.full,

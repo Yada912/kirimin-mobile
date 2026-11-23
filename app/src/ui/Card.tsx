@@ -1,5 +1,8 @@
 import React from 'react';
-import { View, StyleSheet, Pressable, ViewStyle, StyleProp } from 'react-native';
+import { Animated, View, StyleSheet, Pressable, ViewStyle, StyleProp } from 'react-native';
+import { usePressScale } from './motion';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 import { colors, radii, shadows, spacing } from '../theme/tokens';
 
 export interface CardProps {
@@ -17,6 +20,8 @@ export function Card({
   variant = 'elevated',
   padding = 'lg',
 }: CardProps) {
+  const { scale, handlers } = usePressScale(0.985);
+  const [pressed, setPressed] = React.useState(false);
   const containerStyle: ViewStyle = {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
@@ -30,16 +35,20 @@ export function Card({
 
   if (onPress) {
     return (
-      <Pressable
+      <AnimatedPressable
         onPress={onPress}
-        style={({ pressed }) => [
-          containerStyle,
-          pressed && { opacity: 0.85, transform: [{ scale: 0.995 }] },
-          style,
-        ]}
+        onPressIn={() => {
+          setPressed(true);
+          handlers.onPressIn?.();
+        }}
+        onPressOut={() => {
+          setPressed(false);
+          handlers.onPressOut?.();
+        }}
+        style={[containerStyle, pressed && { opacity: 0.94 }, style, { transform: [{ scale }] }]}
       >
         {children}
-      </Pressable>
+      </AnimatedPressable>
     );
   }
 

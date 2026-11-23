@@ -31,6 +31,8 @@ import {
   Divider,
   HandoverSparkArt,
   SuccessBurstArt,
+  PopIn,
+  HandoverArt,
   BrandLogo,
 } from '../../src/ui';
 import {
@@ -213,7 +215,9 @@ export default function BayarScreen() {
           <Card variant="elevated" padding="xl" style={styles.receiptCard}>
             <View style={{ alignItems: 'center', marginBottom: spacing.md }}>
               <BrandLogo size="sm" tone="angkut" surface="soft" style={{ alignSelf: 'center', marginBottom: spacing.sm }} />
-              <SuccessBurstArt size={96} />
+              <PopIn>
+                <SuccessBurstArt size={96} />
+              </PopIn>
               <Text variant="title" color={colors.text.primary} weight="700" style={{ marginTop: spacing.sm }}>
                 Pembayaran diterima
               </Text>
