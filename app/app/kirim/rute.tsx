@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, User, Phone, ArrowUpDown, Crosshair } from 'lucide-react-native';
+import { User, Phone, ArrowUpDown, Crosshair, ChevronRight } from '../../src/ui/icons';
 import type { Place, HandoverMethod, PackageSize } from '@kirimin/shared';
 import { HANDOVER_METHODS, HANDOVER_LABELS } from '@kirimin/shared';
-import { colors, radii, spacing } from '../../src/theme/tokens';
+import { colors, radii, spacing, shadows } from '../../src/theme/tokens';
 import {
   Text,
   TopBar,
   StepHeader,
-  Card,
   TextField,
   ChipGroup,
   Button,
@@ -20,24 +19,13 @@ import {
 import { api } from '../../src/api/client';
 import { formatRupiah, formatDistance } from '../../src/utils/format';
 import { PLACE_BY_ID, findPlaceByPreset } from '../../src/constants/places';
+import { KIRIM_STEPS } from '../../src/features/kirim/draft';
 
-const PICKUP_QUICK = [
-  PLACE_BY_ID.tukad_badung,
-  PLACE_BY_ID.sesetan,
-  PLACE_BY_ID.panjer,
-  PLACE_BY_ID.sanur,
-];
-
-const DROPOFF_QUICK = [
-  PLACE_BY_ID.gedung_ft,
-  PLACE_BY_ID.jimbaran,
-  PLACE_BY_ID.kampus_bukit,
-  PLACE_BY_ID.nusa_dua,
-];
-
+/** Step 1 of sending: where from, where to, and who receives it. */
 export default function KirimRuteScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { height: screenH } = useWindowDimensions();
 
   const parsePlaceParam = (raw: unknown): Place | undefined => {
     if (typeof raw !== 'string' || !raw.trim()) return undefined;
@@ -61,269 +49,135 @@ export default function KirimRuteScreen() {
 
   const [pickup, setPickup] = useState<Place>(initialPickup);
   const [dropoff, setDropoff] = useState<Place>(initialDropoff);
-
-  // Interactive map pin pointing mode ('pickup' | 'dropoff' | null)
   const [mapSelectionMode, setMapSelectionMode] = useState<'pickup' | 'dropoff' | null>(null);
   const [pickerTarget, setPickerTarget] = useState<'pickup' | 'dropoff' | null>(null);
-
-  // Recipient info
   const [recipientName, setRecipientName] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
-
-  // Handover method
   const [handoverMethod, setHandoverMethod] = useState<HandoverMethod>('meet');
-
-  // Estimate state
-  const [estimate, setEstimate] = useState<{
-    distanceKm: number;
-    range: { min: number; max: number };
-  } | null>(null);
-  const [estimating, setEstimating] = useState(false);
+  const [estimate, setEstimate] = useState<{ distanceKm: number; range: { min: number; max: number } } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch estimate whenever locations or size change
+  // The map is the point of this step: give it close to half the screen.
+  const mapHeight = Math.round(Math.max(280, Math.min(460, screenH * 0.46)));
+
   useEffect(() => {
     let active = true;
-    async function fetchEstimate() {
-      if (!pickup || !dropoff) return;
-      try {
-        setEstimating(true);
-        const res = await api.post<any>('/matches/estimate', {
-          size: (params.size as PackageSize) || 'XS',
-          pickup: { lat: pickup.lat, lng: pickup.lng },
-          dropoff: { lat: dropoff.lat, lng: dropoff.lng },
-        });
-        if (active) {
-          setEstimate(res);
-        }
-      } catch (err: any) {
-        console.warn('Failed to estimate price:', err);
-      } finally {
-        if (active) setEstimating(false);
-      }
-    }
-    fetchEstimate();
+    api
+      .post<any>('/matches/estimate', {
+        size: (params.sizePreset as PackageSize) || 'XS',
+        pickup: { lat: pickup.lat, lng: pickup.lng },
+        dropoff: { lat: dropoff.lat, lng: dropoff.lng },
+      })
+      .then((res) => active && setEstimate(res))
+      .catch((err) => console.warn('Failed to estimate price:', err));
     return () => {
       active = false;
     };
-  }, [pickup, dropoff, params.size]);
-
-  const handleSwap = () => {
-    setPickup(dropoff);
-    setDropoff(pickup);
-  };
+  }, [pickup, dropoff, params.sizePreset]);
 
   const handleNext = () => {
     if (!recipientName.trim()) {
-      setError('Nama penerima wajib diisi');
+      setError('Tulis nama penerima');
       return;
     }
     if (!recipientPhone.trim() || recipientPhone.trim().length < 9) {
-      setError('Masukkan nomor HP penerima yang valid (minimal 9 digit)');
+      setError('Nomor HP penerima minimal 9 digit');
       return;
     }
-
     router.push({
-      pathname: '/kirim/driver',
+      pathname: '/kirim/paket',
       params: {
         ...params,
         pickup: JSON.stringify(pickup),
         dropoff: JSON.stringify(dropoff),
-        recipient: JSON.stringify({
-          name: recipientName.trim(),
-          phone: recipientPhone.trim(),
-        }),
+        recipient: JSON.stringify({ name: recipientName.trim(), phone: recipientPhone.trim() }),
         handoverMethod,
       },
     });
   };
 
-  const pickupOptions = PICKUP_QUICK.some((p) => p.label === pickup.label)
-    ? PICKUP_QUICK
-    : [pickup, ...PICKUP_QUICK];
-
-  const dropoffOptions = DROPOFF_QUICK.some((p) => p.label === dropoff.label)
-    ? DROPOFF_QUICK
-    : [dropoff, ...DROPOFF_QUICK];
+  const renderPoint = (target: 'pickup' | 'dropoff', place: Place) => {
+    const isPickup = target === 'pickup';
+    const picking = mapSelectionMode === target;
+    return (
+      <View style={styles.pointRow}>
+        <View style={[styles.pointDot, { backgroundColor: isPickup ? colors.primary : colors.senja }]} />
+        <Pressable style={styles.pointText} onPress={() => setPickerTarget(target)} testID={`route-${target}`}>
+          <Text variant="caption" color={colors.text.secondary}>
+            {isPickup ? 'Jemput di' : 'Antar ke'}
+          </Text>
+          <Text variant="headline" numberOfLines={1}>
+            {place.label}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setMapSelectionMode((m) => (m === target ? null : target))}
+          style={[styles.mapPickBtn, picking && styles.mapPickBtnActive]}
+          hitSlop={4}
+          accessibilityLabel={isPickup ? 'Pilih titik jemput di peta' : 'Pilih titik antar di peta'}
+        >
+          <Crosshair size={18} color={picking ? '#FFFFFF' : colors.primary} />
+        </Pressable>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Rute & Penerima" />
-      <StepHeader
-        steps={['Paket', 'Rute', 'Driver', 'Konfirmasi']}
-        currentStep={2}
-      />
+      <TopBar title="Kirim paket" />
+      <StepHeader steps={KIRIM_STEPS} currentStep={1} />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Interactive Map Preview with Settings */}
-        <View style={styles.mapContainer}>
-          <MapView
-            pickup={pickup}
-            dropoff={dropoff}
-            height={210}
-            showSettings
-            selectionMode={mapSelectionMode}
-            onSelectLocation={(place, target) => {
-              if (target === 'pickup') setPickup(place);
-              else setDropoff(place);
-            }}
-          />
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <MapView
+          pickup={pickup}
+          dropoff={dropoff}
+          height={mapHeight}
+          showSettings
+          style={styles.map}
+          selectionMode={mapSelectionMode}
+          onSelectLocation={(place, target) => {
+            if (target === 'pickup') setPickup(place);
+            else setDropoff(place);
+          }}
+        />
 
-          {/* Point-on-Map Controls */}
-          <View style={styles.mapActionRow}>
+        {/* Route card overlaps the bottom edge of the map. */}
+        <View style={styles.routeCard}>
+          {renderPoint('pickup', pickup)}
+          <View style={styles.routeDivider}>
+            <View style={styles.routeLine} />
             <Pressable
-              onPress={() =>
-                setMapSelectionMode((m) => (m === 'pickup' ? null : 'pickup'))
-              }
-              style={[
-                styles.mapActionChip,
-                mapSelectionMode === 'pickup' && styles.mapActionChipActive,
-              ]}
+              onPress={() => {
+                setPickup(dropoff);
+                setDropoff(pickup);
+              }}
+              style={styles.swapBtn}
+              hitSlop={6}
+              accessibilityLabel="Tukar jemput dan antar"
             >
-              <Crosshair
-                size={13}
-                color={mapSelectionMode === 'pickup' ? '#FFF' : colors.primary}
-              />
-              <Text
-                variant="captionMedium"
-                color={mapSelectionMode === 'pickup' ? '#FFF' : colors.primary}
-                weight="600"
-                style={{ marginLeft: 4 }}
-              >
-                {mapSelectionMode === 'pickup' ? 'Selesai Jemput' : 'Tunjuk Jemput'}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() =>
-                setMapSelectionMode((m) => (m === 'dropoff' ? null : 'dropoff'))
-              }
-              style={[
-                styles.mapActionChip,
-                mapSelectionMode === 'dropoff' && styles.mapActionChipActiveGreen,
-              ]}
-            >
-              <Crosshair
-                size={13}
-                color={
-                  mapSelectionMode === 'dropoff' ? '#FFF' : colors.semantic.success
-                }
-              />
-              <Text
-                variant="captionMedium"
-                color={
-                  mapSelectionMode === 'dropoff' ? '#FFF' : colors.semantic.success
-                }
-                weight="600"
-                style={{ marginLeft: 4 }}
-              >
-                {mapSelectionMode === 'dropoff' ? 'Selesai Antar' : 'Tunjuk Antar'}
-              </Text>
-            </Pressable>
-
-            <Pressable onPress={handleSwap} style={styles.swapChip}>
-              <ArrowUpDown size={13} color={colors.text.secondary} />
-              <Text
-                variant="captionMedium"
-                color={colors.text.secondary}
-                weight="600"
-                style={{ marginLeft: 4 }}
-              >
-                Tukar
-              </Text>
+              <ArrowUpDown size={16} color={colors.text.secondary} />
             </Pressable>
           </View>
-        </View>
+          {renderPoint('dropoff', dropoff)}
 
-        {/* Titik Jemput */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.titleWithDot}>
-              <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-              <Text variant="headline" color={colors.text.primary} weight="700">
-                Lokasi Penjemputan
+          {estimate ? (
+            <View style={styles.estimate}>
+              <Text variant="callout" color={colors.text.secondary}>
+                {formatDistance(estimate.distanceKm)}
+              </Text>
+              <Text variant="calloutSemibold" color={colors.laut}>
+                Kira-kira {formatRupiah(estimate.range.min)}–{formatRupiah(estimate.range.max)}
               </Text>
             </View>
-            <Pressable onPress={() => setPickerTarget('pickup')} hitSlop={8}>
-              <Text variant="calloutSemibold" color={colors.primary}>
-                Semua Lokasi
-              </Text>
-            </Pressable>
-          </View>
-
-          <ChipGroup<string>
-            items={pickupOptions.map((p) => ({ value: p.label, label: p.label }))}
-            value={pickup.label}
-            onChange={(label) => {
-              const found = pickupOptions.find((p) => p.label === label);
-              if (found) setPickup({ label: found.label, lat: found.lat, lng: found.lng });
-            }}
-          />
-          <Text variant="caption" color={colors.text.muted} style={{ marginTop: 6 }}>
-            Koordinat: {pickup.lat.toFixed(4)}, {pickup.lng.toFixed(4)}
-          </Text>
+          ) : null}
         </View>
 
-        {/* Titik Antar */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.titleWithDot}>
-              <View style={[styles.dot, { backgroundColor: colors.semantic.success }]} />
-              <Text variant="headline" color={colors.text.primary} weight="700">
-                Lokasi Pengantaran
-              </Text>
-            </View>
-            <Pressable onPress={() => setPickerTarget('dropoff')} hitSlop={8}>
-              <Text variant="calloutSemibold" color={colors.primary}>
-                Semua Lokasi
-              </Text>
-            </Pressable>
-          </View>
-
-          <ChipGroup<string>
-            items={dropoffOptions.map((p) => ({ value: p.label, label: p.label }))}
-            value={dropoff.label}
-            onChange={(label) => {
-              const found = dropoffOptions.find((p) => p.label === label);
-              if (found) setDropoff({ label: found.label, lat: found.lat, lng: found.lng });
-            }}
-          />
-          <Text variant="caption" color={colors.text.muted} style={{ marginTop: 6 }}>
-            Koordinat: {dropoff.lat.toFixed(4)}, {dropoff.lng.toFixed(4)}
-          </Text>
-        </View>
-
-        {/* Estimasi Jarak & Biaya */}
-        {estimate && (
-          <Card variant="flat" padding="md" style={styles.estimateCard}>
-            <View style={styles.estimateRow}>
-              <View>
-                <Text variant="captionMedium" color={colors.text.secondary}>
-                  Jarak Pengiriman
-                </Text>
-                <Text variant="headline" color={colors.text.primary} weight="700">
-                  {formatDistance(estimate.distanceKm)}
-                </Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text variant="captionMedium" color={colors.text.secondary}>
-                  Perkiraan Ongkos
-                </Text>
-                <Text variant="headline" color={colors.primary} weight="700">
-                  {formatRupiah(estimate.range.min)} – {formatRupiah(estimate.range.max)}
-                </Text>
-              </View>
-            </View>
-          </Card>
-        )}
-
-        {/* Data Penerima */}
-        <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Informasi Penerima
+          <Text variant="title" style={styles.sectionTitle}>
+            Siapa penerimanya?
           </Text>
           <TextField
-            label="Nama Penerima"
+            label="Nama"
             placeholder="Contoh: Dewa"
             value={recipientName}
             onChangeText={(t) => {
@@ -333,7 +187,7 @@ export default function KirimRuteScreen() {
             leftElement={<User size={18} color={colors.text.muted} />}
           />
           <TextField
-            label="Nomor Handphone Penerima"
+            label="Nomor HP"
             placeholder="Contoh: 081234567890"
             value={recipientPhone}
             onChangeText={(t) => {
@@ -344,44 +198,31 @@ export default function KirimRuteScreen() {
             leftElement={<Phone size={18} color={colors.text.muted} />}
             error={error || undefined}
           />
-        </View>
-
-        {/* Metode Serah Terima */}
-        <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Metode Serah Terima di Tujuan
+          <Text variant="calloutSemibold" style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
+            Cara serah terima
           </Text>
           <ChipGroup<HandoverMethod>
-            items={HANDOVER_METHODS.map((m) => ({
-              value: m,
-              label: HANDOVER_LABELS[m],
-            }))}
+            items={HANDOVER_METHODS.map((m) => ({ value: m, label: HANDOVER_LABELS[m] }))}
             value={handoverMethod}
             onChange={setHandoverMethod}
           />
         </View>
       </ScrollView>
 
-      {/* Bottom Action */}
       <View style={styles.bottomBar}>
         <Button
-          label="Lanjut: Cari Driver Searah"
-          variant="primary"
+          label="Lanjut ke detail paket"
           size="lg"
-          loading={estimating}
           onPress={handleNext}
+          rightIcon={<ChevronRight size={18} color="#FFFFFF" />}
+          testID="rute-next"
         />
       </View>
 
-      {/* Full Bali Place Picker Sheet */}
       <PlacePickerSheet
         visible={pickerTarget !== null}
         onClose={() => setPickerTarget(null)}
-        title={
-          pickerTarget === 'pickup'
-            ? 'Pilih Lokasi Penjemputan'
-            : 'Pilih Lokasi Pengantaran'
-        }
+        title={pickerTarget === 'pickup' ? 'Jemput di mana?' : 'Antar ke mana?'}
         selected={pickerTarget === 'pickup' ? pickup : dropoff}
         onSelect={(place) => {
           if (pickerTarget === 'pickup') setPickup(place);
@@ -398,78 +239,88 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.lg,
-    paddingBottom: 108,
+    paddingBottom: 120,
   },
-  mapContainer: {
-    marginBottom: spacing.lg,
+  map: {
+    borderRadius: 0,
+    borderWidth: 0,
   },
-  mapActionRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-    flexWrap: 'wrap',
+  routeCard: {
+    marginHorizontal: spacing.lg,
+    marginTop: -36,
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    ...shadows.float,
   },
-  mapActionChip: {
+  pointRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: radii.full,
+    minHeight: 52,
+  },
+  pointDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    ...shadows.card,
+  },
+  pointText: {
+    flex: 1,
+    marginLeft: spacing.md,
+    paddingVertical: 4,
+  },
+  mapPickBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.primaryLight,
-    borderWidth: 1,
-    borderColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  mapActionChipActive: {
+  mapPickBtnActive: {
     backgroundColor: colors.primary,
-    borderColor: colors.primary,
   },
-  mapActionChipActiveGreen: {
-    backgroundColor: colors.semantic.success,
-    borderColor: colors.semantic.success,
-  },
-  swapChip: {
+  routeDivider: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: radii.full,
+    height: 20,
+  },
+  routeLine: {
+    width: 2,
+    height: 20,
+    marginLeft: 6,
+    backgroundColor: colors.border,
+  },
+  swapBtn: {
+    position: 'absolute',
+    right: 48,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  estimate: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
   section: {
-    marginBottom: spacing.xl,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  titleWithDot: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.xxl,
   },
   sectionTitle: {
-    marginBottom: spacing.sm,
-  },
-  estimateCard: {
-    backgroundColor: colors.primarySubtle,
-    borderWidth: 1,
-    borderColor: colors.primaryLight,
-    marginBottom: spacing.xl,
-  },
-  estimateRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    marginBottom: spacing.md,
   },
   bottomBar: {
     position: 'absolute',
@@ -479,6 +330,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     padding: spacing.lg,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.borderLight,
+    borderTopColor: colors.border,
   },
 });

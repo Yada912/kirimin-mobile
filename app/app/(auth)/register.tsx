@@ -25,7 +25,7 @@ import {
   Home,
   GraduationCap,
   Briefcase,
-} from 'lucide-react-native';
+} from '../../src/ui/icons';
 import type { Role, SavedPlaceKind, VehicleType } from '@kirimin/shared';
 import { SAVED_PLACE_LABELS } from '@kirimin/shared';
 import { colors, radii, spacing } from '../../src/theme/tokens';
@@ -168,7 +168,7 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar
-        title="Daftar Akun Baru"
+        title="Buat akun"
         subtitle={`Langkah ${step} dari 3`}
         onBack={() => {
           if (step > 1) {
@@ -210,7 +210,7 @@ export default function RegisterScreen() {
               </View>
 
               <TextField
-                label="Nama Lengkap"
+                label="Nama lengkap"
                 placeholder="Contoh: Ketut Suartika"
                 value={name}
                 onChangeText={(t) => {
@@ -221,7 +221,7 @@ export default function RegisterScreen() {
               />
 
               <TextField
-                label="Nomor Handphone (WhatsApp)"
+                label="Nomor HP (WhatsApp)"
                 placeholder="Contoh: 081234567890"
                 value={phone}
                 onChangeText={(t) => {
@@ -234,7 +234,7 @@ export default function RegisterScreen() {
               />
 
               <TextField
-                label="Email (Opsional)"
+                label="Email (opsional)"
                 placeholder="Contoh: ketut@email.com"
                 value={email}
                 onChangeText={(t) => {
@@ -247,7 +247,7 @@ export default function RegisterScreen() {
               />
 
               <TextField
-                label="Kata Sandi"
+                label="Kata sandi"
                 placeholder="Minimal 6 karakter"
                 value={password}
                 onChangeText={(t) => {
@@ -294,7 +294,7 @@ export default function RegisterScreen() {
               ) : null}
 
               <TextField
-                label="Konfirmasi Kata Sandi"
+                label="Ulangi kata sandi"
                 placeholder="Ulangi kata sandi"
                 value={confirmPassword}
                 onChangeText={(t) => {
@@ -318,7 +318,7 @@ export default function RegisterScreen() {
               </Pressable>
 
               <Button
-                label="Lanjut: Pilih Peran Utama"
+                label="Lanjut"
                 variant="primary"
                 size="lg"
                 onPress={() => {
@@ -333,7 +333,7 @@ export default function RegisterScreen() {
           {step === 2 ? (
             <View>
               <Text variant="title" color={colors.text.primary} weight="700" style={{ marginBottom: 4 }}>
-                Pilih Peran Utama Anda
+                Kamu lebih sering jadi apa?
               </Text>
               <Text variant="callout" color={colors.text.secondary} style={{ marginBottom: spacing.md }}>
                 Tenang, kamu bisa beralih antara Kirim & Angkut kapan saja dari Beranda.
@@ -395,7 +395,7 @@ export default function RegisterScreen() {
               {role === 'driver' ? (
                 <Card variant="outlined" padding="md" style={styles.vehicleSetupCard}>
                   <Text variant="headline" color={colors.driverDeep} weight="700" style={{ marginBottom: spacing.sm }}>
-                    Data Kendaraan Pengemudi
+                    Kendaraan
                   </Text>
                   <View style={styles.vehicleTypeRow}>
                     <Pressable
@@ -433,7 +433,7 @@ export default function RegisterScreen() {
                   </View>
 
                   <TextField
-                    label="Plat Nomor Kendaraan"
+                    label="Plat nomor"
                     placeholder="Contoh: DK 4521 AB"
                     value={plate}
                     onChangeText={setPlate}
@@ -444,7 +444,7 @@ export default function RegisterScreen() {
               ) : null}
 
               <Button
-                label="Lanjut: Atur Lokasi Favorit"
+                label="Lanjut"
                 variant="primary"
                 size="lg"
                 onPress={() => {
@@ -459,7 +459,7 @@ export default function RegisterScreen() {
           {step === 3 ? (
             <View>
               <Text variant="title" color={colors.text.primary} weight="700" style={{ marginBottom: 4 }}>
-                Simpan Lokasi Favorit Pertamamu
+                Simpan alamat pertamamu
               </Text>
               <Text variant="callout" color={colors.text.secondary} style={{ marginBottom: spacing.md }}>
                 Ketuk peta atau pilih area agar nanti kamu tidak perlu mencari ulang alamat rumah/kampus.
@@ -526,14 +526,14 @@ export default function RegisterScreen() {
               </View>
 
               <TextField
-                label="Nama Lokasi Favorit"
+                label="Nama tempat"
                 placeholder="Contoh: Kos Renon, Kampus Bukit"
                 value={favLabel}
                 onChangeText={setFavLabel}
               />
 
               <Button
-                label="Selesai & Mulai Pakai Kirimin"
+                label="Selesai"
                 variant="primary"
                 size="lg"
                 loading={loading}
@@ -541,7 +541,7 @@ export default function RegisterScreen() {
                 style={{ marginTop: spacing.xs }}
               />
               <Button
-                label="Lewati Lokasi & Masuk Sekarang"
+                label="Lewati dulu"
                 variant="ghost"
                 size="md"
                 disabled={loading}

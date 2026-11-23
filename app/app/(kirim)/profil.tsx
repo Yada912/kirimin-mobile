@@ -11,7 +11,8 @@ import {
   SlidersHorizontal,
   Bookmark,
   UserCog,
-} from 'lucide-react-native';
+  Radio,
+} from '../../src/ui/icons';
 import { colors, radii, spacing } from '../../src/theme/tokens';
 import {
   Text,
@@ -22,6 +23,7 @@ import {
   ListItem,
   Divider,
   Dialog,
+  ServerSettingsSheet,
 } from '../../src/ui';
 import { useAuth } from '../../src/auth/AuthContext';
 
@@ -29,6 +31,7 @@ export default function KirimProfilScreen() {
   const router = useRouter();
   const { user, logout, switchRole } = useAuth();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showServer, setShowServer] = useState(false);
   const [switching, setSwitching] = useState(false);
 
   const handleSwitchRole = async () => {
@@ -51,7 +54,7 @@ export default function KirimProfilScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Profil Pengirim" canGoBack={false} />
+      <TopBar title="Profil" canGoBack={false} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* User Card */}
@@ -107,15 +110,15 @@ export default function KirimProfilScreen() {
             </View>
             <View style={{ flex: 1, marginLeft: spacing.md }}>
               <Text variant="headline" color={colors.text.primary} weight="600">
-                Beralih ke Mode Angkut
+                Mau sekalian antar paket?
               </Text>
               <Text variant="caption" color={colors.text.secondary}>
-                Buka rute dan terima kiriman paket sebagai pengemudi.
+                Pasang rute harianmu dan dapat uang tambahan.
               </Text>
             </View>
           </View>
           <Button
-            label="Ganti ke Angkut (Driver)"
+            label="Ganti ke pengemudi"
             variant="outline"
             size="md"
             loading={switching}
@@ -127,40 +130,48 @@ export default function KirimProfilScreen() {
         {/* Menu Section */}
         <View style={styles.menuCard}>
           <ListItem
-            title="Edit Profil, Kendaraan & Notifikasi"
-            subtitle="Ubah nama, email, verifikasi KTP, & notifikasi"
+            title="Ubah profil"
+            subtitle="Nama, kendaraan, KTP, notifikasi"
             leftIcon={<UserCog size={22} color={colors.primary} />}
             onPress={() => router.push('/kelola/profil')}
             showChevron
           />
           <Divider />
           <ListItem
-            title="Kelola Preset Rute Cepat"
-            subtitle="Tambah, ubah, atau beri warna rute favorit"
+            title="Rute favorit"
+            subtitle="Rute yang sering kamu pakai"
             leftIcon={<SlidersHorizontal size={22} color={colors.accent.coral} />}
             onPress={() => router.push('/kelola/preset')}
             showChevron
           />
           <Divider />
           <ListItem
-            title="Lokasi Tersimpan Saya"
-            subtitle="Simpan alamat rumah, kos, kantor, & kampus"
+            title="Alamat tersimpan"
+            subtitle="Rumah, kos, kampus, kantor"
             leftIcon={<Bookmark size={22} color={colors.accent.violet} />}
             onPress={() => router.push('/kelola/lokasi')}
             showChevron
           />
           <Divider />
           <ListItem
-            title="Bantuan & Pusat Informasi"
-            subtitle="Pertanyaan umum seputar pengiriman"
+            title="Alamat server"
+            subtitle="Sambungkan ke server di PC atau tunnel"
+            leftIcon={<Radio size={22} color={colors.primary} />}
+            onPress={() => setShowServer(true)}
+            showChevron
+          />
+          <Divider />
+          <ListItem
+            title="Bantuan"
+            subtitle="Pertanyaan yang sering ditanyakan"
             leftIcon={<HelpCircle size={22} color={colors.primary} />}
             onPress={() => router.push({ pathname: '/placeholder', params: { topic: 'bantuan' } })}
             showChevron
           />
           <Divider />
           <ListItem
-            title="Ketentuan Layanan & Privasi"
-            subtitle="Kebijakan keamanan data Kirimin"
+            title="Ketentuan dan privasi"
+            subtitle="Cara kami menjaga datamu"
             leftIcon={<FileText size={22} color={colors.primary} />}
             onPress={() => router.push({ pathname: '/placeholder', params: { topic: 'privasi' } })}
             showChevron
@@ -169,7 +180,7 @@ export default function KirimProfilScreen() {
 
         {/* Logout Button */}
         <Button
-          label="Keluar dari Akun"
+          label="Keluar"
           variant="ghost"
           size="lg"
           leftIcon={<LogOut size={18} color={colors.semantic.danger} />}
@@ -178,12 +189,14 @@ export default function KirimProfilScreen() {
         />
       </ScrollView>
 
+      <ServerSettingsSheet visible={showServer} onClose={() => setShowServer(false)} />
+
       {/* Logout Confirmation Dialog */}
       <Dialog
         visible={showLogoutDialog}
-        title="Keluar dari Akun?"
-        message="Anda akan keluar dari sesi ini dan perlu memasukkan nomor HP lagi untuk masuk."
-        confirmLabel="Ya, Keluar"
+        title="Keluar dari akun?"
+        message="Kamu perlu masuk lagi dengan nomor HP."
+        confirmLabel="Keluar"
         cancelLabel="Batal"
         isDestructive
         onConfirm={handleLogout}

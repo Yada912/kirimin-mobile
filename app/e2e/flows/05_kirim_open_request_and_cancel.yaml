@@ -6,29 +6,34 @@ tags: [mvp]
 - runFlow:
     file: ../subflows/login_as.yaml
     env:
-      DEMO_BUTTON: "Masuk: Wayan.*"
-      HOME_TEXT: "Kirim Paket Sekarang"
-- tapOn: "Kirim Paket Sekarang"
-- tapOn: "Lanjut: Atur Rute"
-- tapOn: "Lanjut: Cari Driver Searah"
+      DEMO_BUTTON: "Wayan \\(pengirim\\)"
+      HOME_TEXT: "Mau kirim ke mana\\?"
+- tapOn: "Cari tujuan pengiriman"
+- tapOn: "Contoh: Dewa"
+- inputText: "Raka"
+- tapOn: "Contoh: 081234567890"
+- inputText: "081288887777"
+- hideKeyboard
+- tapOn: "Lanjut ke detail paket"
+- tapOn: "Cari pengemudi searah"
 - scrollUntilVisible:
-    element: "Posting Permintaan Terbuka"
-- tapOn: "Posting Permintaan Terbuka"
+    element: "Kirim ke semua pengemudi"
+- tapOn: "Kirim ke semua pengemudi"
 
 # S4 for an open request: no fake price
-- assertVisible: "Tinjau & Konfirmasi.*"
-- assertVisible: "Ongkos ditentukan saat driver menerima.*"
-- tapOn: "Posting Permintaan Terbuka"
+- assertVisible: "Cek lalu kirim"
+- assertVisible: "Ongkos muncul setelah.*"
+- tapOn: "Kirim ke semua pengemudi"
 
 # S6 Menunggu Driver → S7 Batalkan
 - extendedWaitUntil:
-    visible: "Menunggu Driver.*"
+    visible: "Menunggu pengemudi"
     timeout: 10000
-- tapOn: "Batalkan Permintaan"
-- assertVisible: "Batalkan Pesanan.*"
+- tapOn: "Batalkan"
+- assertVisible: "Batalkan pesanan ini\\?"
 - scrollUntilVisible:
-    element: "Ya, Batalkan Pesanan Ini"
-- tapOn: "Ya, Batalkan Pesanan Ini"
+    element: "Ya, batalkan"
+- tapOn: "Ya, batalkan"
 - extendedWaitUntil:
-    visible: "Sedang Berjalan"
+    visible: "Berjalan"
     timeout: 10000

@@ -10,9 +10,9 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Send } from 'lucide-react-native';
+import { Send } from '../../src/ui/icons';
 import type { ChatMessage } from '@kirimin/shared';
-import { colors, radii, spacing, typography } from '../../src/theme/tokens';
+import { colors, radii, spacing, typography, fonts } from '../../src/theme/tokens';
 import { Text, TopBar, SkeletonCard, EmptyState, ErrorState } from '../../src/ui';
 import { useOrder, useOrderMessages, useSendMessage } from '../../src/api/hooks/useApi';
 import { useAuth } from '../../src/auth/AuthContext';
@@ -68,7 +68,7 @@ export default function ChatScreen() {
           <ErrorState message={(error as any)?.message || 'Gagal memuat pesan'} onRetry={() => refetch()} />
         ) : !messages || messages.length === 0 ? (
           <EmptyState
-            title="Mulai Percakapan"
+            title="Belum ada pesan"
             description={`Kirim pesan ke ${otherPersonName} untuk koordinasi penjemputan atau pengantaran.`}
           />
         ) : (
@@ -197,6 +197,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.borderLight,
   },
   input: {
+    fontFamily: fonts['500'],
     flex: 1,
     ...typography.body,
     backgroundColor: colors.surfaceSecondary,

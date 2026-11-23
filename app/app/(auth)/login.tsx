@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Phone, Lock, Package, Bike, Sparkles } from 'lucide-react-native';
+import { Phone, Lock, Package, Bike } from '../../src/ui/icons';
 import { colors, radii, spacing } from '../../src/theme/tokens';
-import { Text, TopBar, TextField, Button, Card, BrandLogo } from '../../src/ui';
+import { Text, TopBar, TextField, Button, Card, ServerChip } from '../../src/ui';
 import { useAuth } from '../../src/auth/AuthContext';
 
 export default function LoginScreen() {
@@ -42,21 +42,18 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Masuk" />
+      <TopBar title="" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
       >
         <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.banner}>
-            <View style={{ flex: 1 }}>
-              <BrandLogo size="md" tone="light" />
-              <Text variant="caption" color="#DBEAFE" style={{ marginTop: 5 }}>
-                Masuk untuk melacak paket atau mulai rute angkutmu.
-              </Text>
-            </View>
-            <Sparkles size={20} color="#FDE047" />
-          </View>
+          <Text variant="largeTitle" color={colors.laut}>
+            Selamat datang lagi
+          </Text>
+          <Text variant="body" color={colors.text.secondary} style={{ marginTop: 4, marginBottom: spacing.xl }}>
+            Masuk dengan nomor HP yang kamu daftarkan.
+          </Text>
 
           {error && (
             <Card variant="flat" padding="md" style={styles.errorCard}>
@@ -67,7 +64,7 @@ export default function LoginScreen() {
           )}
 
           <TextField
-            label="Nomor Handphone"
+            label="Nomor HP"
             placeholder="Contoh: 081200000001"
             value={phone}
             onChangeText={(t) => {
@@ -80,7 +77,7 @@ export default function LoginScreen() {
           />
 
           <TextField
-            label="Kata Sandi"
+            label="Kata sandi"
             placeholder="Masukkan kata sandi"
             value={password}
             onChangeText={(t) => {
@@ -103,7 +100,7 @@ export default function LoginScreen() {
           {/* Quick Demo Accounts Strip for effortless testing */}
           <Card variant="flat" padding="md" style={styles.demoCard}>
             <Text variant="captionMedium" color={colors.text.secondary} weight="700" style={{ marginBottom: spacing.xs }}>
-              Akses Cepat Akun Demo (Bali)
+              Coba pakai akun contoh
             </Text>
             <View style={styles.demoRow}>
               <Pressable
@@ -116,7 +113,7 @@ export default function LoginScreen() {
               >
                 <Package size={14} color={colors.primary} />
                 <Text variant="captionMedium" color={colors.primary} weight="700" style={{ marginLeft: 5 }}>
-                  Wayan (Pengirim)
+                  Wayan (pengirim)
                 </Text>
               </Pressable>
 
@@ -130,18 +127,22 @@ export default function LoginScreen() {
               >
                 <Bike size={14} color={colors.driverDeep} />
                 <Text variant="captionMedium" color={colors.driverDeep} weight="700" style={{ marginLeft: 5 }}>
-                  Made S. (Driver)
+                  Made (pengemudi)
                 </Text>
               </Pressable>
             </View>
           </Card>
+
+          <View style={{ marginTop: spacing.lg }}>
+            <ServerChip />
+          </View>
 
           <View style={styles.registerLink}>
             <Text variant="callout" color={colors.text.secondary}>
               Belum punya akun?{' '}
             </Text>
             <Button
-              label="Daftar Sekarang"
+              label="Buat akun"
               variant="ghost"
               size="sm"
               fullWidth={false}

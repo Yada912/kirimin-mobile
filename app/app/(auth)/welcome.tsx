@@ -1,151 +1,88 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bike, ShieldCheck, Navigation, Sparkles } from 'lucide-react-native';
-import { colors, radii, spacing, shadows } from '../../src/theme/tokens';
-import { Text, Button, WelcomeHeroArt, BrandLogo } from '../../src/ui';
+import { colors, spacing } from '../../src/theme/tokens';
+import { Text, Button, BrandLogo, SearahScene, ServerChip } from '../../src/ui';
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
+  const sceneHeight = Math.round(Math.min(height * 0.46, width * 0.78));
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.topSection}>
-        {/* Vibrant App-Native Brand Bar */}
-        <View style={styles.brandHeaderRow}>
-          <BrandLogo size="sm" tone="brand" surface="soft" testID="welcome-brand-logo" />
-          <View style={styles.badgeRow}>
-            <Sparkles size={12} color={colors.primary} />
-            <Text variant="captionMedium" color={colors.primary} weight="700" style={{ marginLeft: 4 }}>
-              BALI SEARAH
-            </Text>
+    <View style={styles.root}>
+      {/* The product in one picture: a road, two pins, someone already going that way. */}
+      <View style={[styles.scene, { height: sceneHeight }]}>
+        <SearahScene width={width} height={sceneHeight} />
+        <SafeAreaView edges={['top']} style={styles.sceneTop}>
+          <BrandLogo size="md" tone="light" testID="welcome-brand-logo" />
+        </SafeAreaView>
+      </View>
+
+      <SafeAreaView edges={['bottom']} style={styles.body}>
+        <View>
+          <Text variant="display" color={colors.laut}>
+            Titip paket ke yang searah.
+          </Text>
+          <Text variant="body" color={colors.text.secondary} style={styles.lead}>
+            Pengendara yang memang lewat rutemu ikut membawakan paket. Lebih murah dari kurir, dan
+            paket hanya diserahkan dengan kode 4 digit.
+          </Text>
+        </View>
+
+        <View>
+          <Button
+            label="Buat akun"
+            size="lg"
+            onPress={() => router.push('/(auth)/register')}
+            testID="welcome-register-btn"
+          />
+          <Button
+            label="Saya sudah punya akun"
+            variant="ghost"
+            size="lg"
+            onPress={() => router.push('/(auth)/login')}
+            style={{ marginTop: spacing.xs }}
+            testID="welcome-login-btn"
+          />
+          <View style={{ marginTop: spacing.md }}>
+            <ServerChip />
           </View>
         </View>
-
-        {/* Colorful Hero Illustration Banner */}
-        <View style={styles.heroArtCard}>
-          <WelcomeHeroArt width={330} height={164} />
-        </View>
-
-        <BrandLogo size="xl" tone="brand" style={{ marginTop: 2 }} />
-        <Text variant="callout" color={colors.text.secondary} align="center" style={styles.tagline}>
-          Titip paket ke pengendara yang sudah searah perjalanan. Lebih hemat, cepat, dengan navigasi jalan live.
-        </Text>
-      </View>
-
-      {/* Compact Highlights Grid (No Scroll Needed!) */}
-      <View style={styles.featureGrid}>
-        <View style={[styles.featureChip, { backgroundColor: colors.primarySubtle, borderColor: '#BFDBFE' }]}>
-          <Bike size={18} color={colors.primary} />
-          <Text variant="captionMedium" color={colors.text.primary} weight="700" style={{ marginTop: 4 }}>
-            2 Peran Fleksibel
-          </Text>
-          <Text variant="caption" color={colors.text.secondary} align="center" style={{ fontSize: 11 }}>
-            Kirim paket atau cuan di rute harian
-          </Text>
-        </View>
-
-        <View style={[styles.featureChip, { backgroundColor: colors.driverSubtle, borderColor: colors.driverLight }]}>
-          <Navigation size={18} color={colors.driver} />
-          <Text variant="captionMedium" color={colors.text.primary} weight="700" style={{ marginTop: 4 }}>
-            Peta Jalan Live
-          </Text>
-          <Text variant="caption" color={colors.text.secondary} align="center" style={{ fontSize: 11 }}>
-            Panduan belokan & kode aman 4 digit
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.trustRow}>
-        <ShieldCheck size={15} color={colors.driver} />
-        <Text variant="caption" color={colors.text.secondary} style={{ marginLeft: 5 }}>
-          Verifikasi kode serah terima 4 digit di setiap pengantaran
-        </Text>
-      </View>
-
-      {/* Primary Thumb-Reach CTA Section */}
-      <View style={styles.actionSection}>
-        <Button
-          label="Daftar Akun Baru"
-          variant="primary"
-          size="lg"
-          onPress={() => router.push('/(auth)/register')}
-          style={styles.mainBtn}
-          testID="welcome-register-btn"
-        />
-        <Button
-          label="Sudah Punya Akun? Masuk"
-          variant="outline"
-          size="lg"
-          onPress={() => router.push('/(auth)/login')}
-          testID="welcome-login-btn"
-        />
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingHorizontal: spacing.lg,
-    justifyContent: 'space-between',
-    paddingVertical: spacing.md,
   },
-  topSection: {
-    alignItems: 'center',
-  },
-  brandHeaderRow: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  heroArtCard: {
-    borderRadius: radii.xl,
+  scene: {
     overflow: 'hidden',
-    marginBottom: spacing.sm,
-    ...shadows.float,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    backgroundColor: colors.laut,
   },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: 11,
-    paddingVertical: 5,
-    borderRadius: radii.full,
+  sceneTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
   },
-  tagline: {
-    marginTop: spacing.xs,
-    maxWidth: 320,
-    lineHeight: 20,
-  },
-  featureGrid: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginVertical: spacing.sm,
-  },
-  featureChip: {
+  body: {
     flex: 1,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    padding: spacing.md,
-    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.lg,
+    justifyContent: 'space-between',
   },
-  trustRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
-  },
-  actionSection: {
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  mainBtn: {
-    marginBottom: 2,
+  lead: {
+    marginTop: spacing.md,
+    maxWidth: 340,
   },
 });

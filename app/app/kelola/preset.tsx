@@ -12,7 +12,7 @@ import {
   Sparkles,
   ArrowRight,
   Crosshair,
-} from 'lucide-react-native';
+} from '../../src/ui/icons';
 import type { Category, PackageSize, Place, RoutePreset } from '@kirimin/shared';
 import { CATEGORIES, PACKAGE_SIZES } from '@kirimin/shared';
 import { colors, radii, spacing, shadows } from '../../src/theme/tokens';
@@ -149,8 +149,8 @@ export default function KelolaPresetScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar
-        title="Kelola Preset Rute"
-        subtitle="Atur rute cepat favoritmu"
+        title="Rute favorit"
+        subtitle="Rute favoritmu"
         rightAction={
           !showEditor ? (
             <Button
@@ -181,7 +181,7 @@ export default function KelolaPresetScreen() {
               {editingId ? 'Edit Preset Rute' : 'Buat Preset Rute Baru'}
             </Text>
             <Text variant="caption" color={colors.text.secondary} style={{ marginBottom: spacing.md }}>
-              Preset tampil di Beranda agar kamu bisa kirim atau buka rute dalam 1 ketukan.
+              Muncul di Beranda supaya kirim atau pasang rute cukup sekali ketuk.
             </Text>
 
             {error ? (
@@ -237,7 +237,7 @@ export default function KelolaPresetScreen() {
             </View>
 
             <TextField
-              label="Nama Preset"
+              label="Nama rute"
               placeholder="Contoh: Kos Renon → Kampus Bukit"
               value={name}
               onChangeText={(t) => {
@@ -248,7 +248,7 @@ export default function KelolaPresetScreen() {
             />
 
             <TextField
-              label="Catatan Singkat (Opsional)"
+              label="Catatan (opsional)"
               placeholder="Contoh: Rute pagi sebelum jam 08.00"
               value={subtitle}
               onChangeText={setSubtitle}
@@ -340,10 +340,10 @@ export default function KelolaPresetScreen() {
             <View style={styles.introBanner}>
               <View style={{ flex: 1 }}>
                 <Text variant="headline" color="#FFFFFF" weight="700">
-                  Kustomisasi Rute Cepatmu
+                  Rute favoritmu
                 </Text>
                 <Text variant="caption" color="#FEF3C7" style={{ marginTop: 2 }}>
-                  Buat, edit, dan beri warna pada preset rute yang paling sering kamu pakai.
+                  Rute yang sering kamu pakai, tinggal ketuk dari Beranda.
                 </Text>
               </View>
               <Pressable onPress={openCreate} style={styles.introBtn}>
@@ -425,7 +425,7 @@ export default function KelolaPresetScreen() {
             </View>
 
             <Button
-              label="Kembalikan Preset Bawaan Bali"
+              label="Kembalikan ke bawaan"
               variant="ghost"
               size="md"
               leftIcon={<RotateCcw size={15} color={colors.primary} />}

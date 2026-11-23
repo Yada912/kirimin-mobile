@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text as RNText, TextProps as RNTextProps, StyleSheet, TextStyle } from 'react-native';
-import { colors, typography } from '../theme/tokens';
+import { colors, typography, fontFor } from '../theme/tokens';
 
 export type TextVariant = keyof typeof typography;
 
@@ -12,6 +12,10 @@ export interface TextProps extends RNTextProps {
   children: React.ReactNode;
 }
 
+/**
+ * All copy goes through this component so it always renders in Plus Jakarta Sans.
+ * The effective weight (variant → weight prop → style.fontWeight) picks the font file.
+ */
 export function Text({
   variant = 'body',
   color = colors.text.primary,
@@ -22,6 +26,8 @@ export function Text({
   ...rest
 }: TextProps) {
   const variantStyle = typography[variant] || typography.body;
+  const flat = (StyleSheet.flatten(style) || {}) as TextStyle;
+  const effectiveWeight = flat.fontWeight ?? weight ?? variantStyle.fontWeight;
 
   return (
     <RNText
@@ -29,8 +35,8 @@ export function Text({
         variantStyle,
         { color },
         align ? { textAlign: align } : undefined,
-        weight ? { fontWeight: weight } : undefined,
         style,
+        { fontFamily: fontFor(effectiveWeight as string), fontWeight: undefined },
       ]}
       {...rest}
     >
@@ -38,4 +44,3 @@ export function Text({
     </RNText>
   );
 }
-

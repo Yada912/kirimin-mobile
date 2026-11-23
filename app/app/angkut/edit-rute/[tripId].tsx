@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Navigation, Clock, Trash2 } from 'lucide-react-native';
+import { Navigation, Clock, Trash2 } from '../../../src/ui/icons';
 import type { PackageSize, Place } from '@kirimin/shared';
 import { PACKAGE_SIZES, PACKAGE_SIZE_INFO } from '@kirimin/shared';
 import { colors, spacing } from '../../../src/theme/tokens';
@@ -74,7 +74,7 @@ export default function AngkutEditRuteScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Edit Rute" />
+        <TopBar title="Ubah rute" />
         <View style={styles.content}>
           <SkeletonCard />
         </View>
@@ -85,7 +85,7 @@ export default function AngkutEditRuteScreen() {
   if (isError || !trip) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Edit Rute" />
+        <TopBar title="Ubah rute" />
         <ErrorState
           message={(error as any)?.message || 'Rute tidak ditemukan'}
           onRetry={() => refetch()}
@@ -147,7 +147,7 @@ export default function AngkutEditRuteScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Edit Rute Perjalanan" subtitle={`${trip.origin.label} → ${trip.destination.label}`} />
+      <TopBar title="Ubah rute" subtitle={`${trip.origin.label} → ${trip.destination.label}`} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {formError ? (
@@ -170,7 +170,7 @@ export default function AngkutEditRuteScreen() {
 
         <View style={styles.section}>
           <TextField
-            label="Nama Rute"
+            label="Nama rute"
             value={name}
             onChangeText={setName}
             leftElement={<Navigation size={18} color={colors.driver} />}
@@ -194,7 +194,7 @@ export default function AngkutEditRuteScreen() {
 
         <View style={styles.section}>
           <TextField
-            label="Jam Berangkat"
+            label="Jam berangkat"
             value={departTime}
             onChangeText={setDepartTime}
             leftElement={<Clock size={18} color={colors.text.muted} />}
@@ -210,7 +210,7 @@ export default function AngkutEditRuteScreen() {
 
         <View style={styles.section}>
           <NumericStepper
-            label="Kapasitas Paket Maksimal"
+            label="Muat berapa paket?"
             value={maxPackages}
             onChange={setMaxPackages}
             min={Math.max(1, trip.slotsUsed)}
@@ -221,7 +221,7 @@ export default function AngkutEditRuteScreen() {
 
         <View style={styles.section}>
           <NumericStepper
-            label="Simpangan Maksimal"
+            label="Mau belok paling jauh"
             value={maxDetourKm}
             onChange={setMaxDetourKm}
             min={1}
@@ -246,7 +246,7 @@ export default function AngkutEditRuteScreen() {
         </View>
 
         <Button
-          label="Batalkan Rute Ini"
+          label="Batalkan rute"
           variant="ghost"
           size="md"
           leftIcon={<Trash2 size={16} color={colors.semantic.danger} />}
@@ -258,7 +258,7 @@ export default function AngkutEditRuteScreen() {
 
       <View style={styles.bottomBar}>
         <Button
-          label="Simpan Perubahan Rute"
+          label="Simpan"
           variant="primary"
           size="lg"
           loading={saving}
@@ -269,7 +269,7 @@ export default function AngkutEditRuteScreen() {
 
       <Dialog
         visible={showCancelDialog}
-        title="Batalkan Rute?"
+        title="Batalkan rute ini?"
         message="Permintaan paket yang menunggu akan dibatalkan otomatis."
         confirmLabel="Ya, Batalkan"
         cancelLabel="Kembali"

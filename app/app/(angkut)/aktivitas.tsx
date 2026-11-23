@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, FlatList, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PackageCheck } from 'lucide-react-native';
+import { PackageCheck } from '../../src/ui/icons';
 import { colors, spacing } from '../../src/theme/tokens';
 import {
   Text,
@@ -32,13 +32,13 @@ export default function AngkutAktivitasScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Kiriman yang Diangkut" canGoBack={false} />
+      <TopBar title="Paket yang kubawa" canGoBack={false} />
 
       <View style={styles.filterBar}>
         <SegmentedControl<'active' | 'history'>
           options={[
-            { value: 'active', label: 'Paket Berjalan' },
-            { value: 'history', label: 'Riwayat Selesai' },
+            { value: 'active', label: 'Berjalan' },
+            { value: 'history', label: 'Selesai' },
           ]}
           value={tab}
           onChange={setTab}
@@ -57,7 +57,7 @@ export default function AngkutAktivitasScreen() {
         />
       ) : !orders || orders.length === 0 ? (
         <EmptyState
-          title={tab === 'active' ? 'Tidak Ada Paket Aktif' : 'Belum Ada Riwayat Selesai'}
+          title={tab === 'active' ? 'Belum ada paket yang kamu bawa' : 'Belum ada riwayat'}
           description={
             tab === 'active'
               ? 'Terima permintaan kiriman pada rute Anda untuk mulai mengangkut paket.'
@@ -117,7 +117,7 @@ export default function AngkutAktivitasScreen() {
                 </Text>
                 <View style={styles.earningRow}>
                   <Text variant="caption" color={colors.text.muted}>
-                    Pendapatan:
+                    Kamu dapat
                   </Text>
                   <Text variant="headline" color={colors.semantic.success} weight="700" style={{ marginLeft: 4 }}>
                     {formatRupiah(item.price?.fee)}

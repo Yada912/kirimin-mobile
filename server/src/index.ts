@@ -56,6 +56,7 @@ server.listen(config.port, config.host, () => {
       if (n.family === 'IPv4' && !n.internal) console.log(`  Phone:   http://${n.address}:${config.port}   (same Wi-Fi)`);
     }
   }
+  console.log('  In the app: tap the server pill on Welcome/Masuk (or Profil > Alamat server) and enter a Phone address.');
   console.log('');
 });
 

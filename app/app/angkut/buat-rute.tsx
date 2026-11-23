@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, Navigation, Clock, Crosshair, ArrowUpDown } from 'lucide-react-native';
+import { MapPin, Navigation, Clock, Crosshair, ArrowUpDown } from '../../src/ui/icons';
 import type { Place, PackageSize } from '@kirimin/shared';
 import { PACKAGE_SIZES, PACKAGE_SIZE_INFO } from '@kirimin/shared';
-import { colors, radii, spacing } from '../../src/theme/tokens';
+import { colors, radii, spacing, shadows } from '../../src/theme/tokens';
 import {
   Text,
   TopBar,
@@ -57,6 +57,8 @@ export default function AngkutBuatRuteScreen() {
   const [acceptedSizes, setAcceptedSizes] = useState<PackageSize[]>(['XS', 'S']);
   const [error, setError] = useState<string | null>(null);
 
+  const { height: screenH } = useWindowDimensions();
+  const mapHeight = Math.round(Math.max(260, Math.min(420, screenH * 0.42)));
   const [mapSelectionMode, setMapSelectionMode] = useState<'pickup' | 'dropoff' | null>(null);
   const [pickerTarget, setPickerTarget] = useState<'origin' | 'destination' | null>(null);
 
@@ -128,7 +130,7 @@ export default function AngkutBuatRuteScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Publikasikan Rute" />
+      <TopBar title="Pasang rute" />
 
       <ScrollView contentContainerStyle={styles.content}>
         {error && (
@@ -139,142 +141,78 @@ export default function AngkutBuatRuteScreen() {
           </Card>
         )}
 
-        {/* Interactive Map Preview with Stops & Settings */}
-        <View style={{ marginBottom: spacing.lg }}>
-          <MapView
-            pickup={origin}
-            dropoff={destination}
-            stops={selectedStops}
-            height={190}
-            showSettings
-            selectionMode={mapSelectionMode}
-            onSelectLocation={(place, target) => {
-              if (target === 'pickup') setOrigin(place);
-              else setDestination(place);
-            }}
-          />
+        <MapView
+          pickup={origin}
+          dropoff={destination}
+          stops={selectedStops}
+          height={mapHeight}
+          showSettings
+          style={styles.map}
+          selectionMode={mapSelectionMode}
+          onSelectLocation={(place, target) => {
+            if (target === 'pickup') setOrigin(place);
+            else setDestination(place);
+          }}
+        />
 
-          <View style={styles.mapActionRow}>
-            <Pressable
-              onPress={() =>
-                setMapSelectionMode((m) => (m === 'pickup' ? null : 'pickup'))
-              }
-              style={[
-                styles.mapActionChip,
-                mapSelectionMode === 'pickup' && styles.mapActionChipActive,
-              ]}
-            >
-              <Crosshair
-                size={13}
-                color={mapSelectionMode === 'pickup' ? '#FFF' : colors.primary}
-              />
-              <Text
-                variant="captionMedium"
-                color={mapSelectionMode === 'pickup' ? '#FFF' : colors.primary}
-                weight="600"
-                style={{ marginLeft: 4 }}
-              >
-                {mapSelectionMode === 'pickup' ? 'Selesai Asal' : 'Tunjuk Asal'}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() =>
-                setMapSelectionMode((m) => (m === 'dropoff' ? null : 'dropoff'))
-              }
-              style={[
-                styles.mapActionChip,
-                mapSelectionMode === 'dropoff' && styles.mapActionChipActiveGreen,
-              ]}
-            >
-              <Crosshair
-                size={13}
-                color={
-                  mapSelectionMode === 'dropoff' ? '#FFF' : colors.semantic.success
-                }
-              />
-              <Text
-                variant="captionMedium"
-                color={
-                  mapSelectionMode === 'dropoff' ? '#FFF' : colors.semantic.success
-                }
-                weight="600"
-                style={{ marginLeft: 4 }}
-              >
-                {mapSelectionMode === 'dropoff' ? 'Selesai Tujuan' : 'Tunjuk Tujuan'}
-              </Text>
-            </Pressable>
-
-            <Pressable onPress={handleSwap} style={styles.swapChip}>
-              <ArrowUpDown size={13} color={colors.text.secondary} />
-              <Text
-                variant="captionMedium"
-                color={colors.text.secondary}
-                weight="600"
-                style={{ marginLeft: 4 }}
-              >
-                Tukar
-              </Text>
-            </Pressable>
-          </View>
+        {/* Start and end of the route, overlapping the map. */}
+        <View style={styles.routeCard}>
+          {(['pickup', 'dropoff'] as const).map((target, i) => {
+            const isStart = target === 'pickup';
+            const place = isStart ? origin : destination;
+            const picking = mapSelectionMode === target;
+            return (
+              <React.Fragment key={target}>
+                {i === 1 ? (
+                  <View style={styles.routeDivider}>
+                    <View style={styles.routeLine} />
+                    <Pressable onPress={handleSwap} style={styles.swapBtn} hitSlop={6} accessibilityLabel="Tukar asal dan tujuan">
+                      <ArrowUpDown size={16} color={colors.text.secondary} />
+                    </Pressable>
+                  </View>
+                ) : null}
+                <View style={styles.pointRow}>
+                  <View style={[styles.pointDot, { backgroundColor: isStart ? colors.sawah : colors.senja }]} />
+                  <Pressable style={styles.pointText} onPress={() => setPickerTarget(isStart ? 'origin' : 'destination')}>
+                    <Text variant="caption" color={colors.text.secondary}>
+                      {isStart ? 'Berangkat dari' : 'Menuju'}
+                    </Text>
+                    <Text variant="headline" numberOfLines={1}>
+                      {place.label}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setMapSelectionMode((m) => (m === target ? null : target))}
+                    style={[styles.mapPickBtn, picking && styles.mapPickBtnActive]}
+                    hitSlop={4}
+                    accessibilityLabel={isStart ? 'Pilih titik berangkat di peta' : 'Pilih tujuan di peta'}
+                  >
+                    <Crosshair size={18} color={picking ? '#FFFFFF' : colors.sawah} />
+                  </Pressable>
+                </View>
+              </React.Fragment>
+            );
+          })}
         </View>
 
-        {/* Nama Rute */}
+        <View style={styles.body}>
         <View style={styles.section}>
           <TextField
-            label="Nama Rute Perjalanan"
-            placeholder="Contoh: Ke Kampus Pagi, Berangkat Kantor"
+            label="Nama rute"
+            placeholder="Contoh: Ke kampus pagi"
             value={name}
             onChangeText={setName}
-            leftElement={<Navigation size={18} color={colors.primary} />}
+            leftElement={<Navigation size={18} color={colors.sawah} />}
           />
-        </View>
-
-        {/* Titik Awal & Akhir */}
-        <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Titik Asal & Tujuan
-          </Text>
-          <View style={styles.endpointRow}>
-            <Pressable
-              onPress={() => setPickerTarget('origin')}
-              style={styles.endpointCard}
-            >
-              <View style={styles.endpointHeader}>
-                <MapPin size={14} color={colors.primary} />
-                <Text variant="captionMedium" color={colors.primary} weight="700" style={{ marginLeft: 4 }}>
-                  Asal
-                </Text>
-              </View>
-              <Text variant="calloutSemibold" color={colors.text.primary} numberOfLines={1}>
-                {origin.label}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => setPickerTarget('destination')}
-              style={styles.endpointCard}
-            >
-              <View style={styles.endpointHeader}>
-                <MapPin size={14} color={colors.semantic.success} />
-                <Text variant="captionMedium" color={colors.semantic.success} weight="700" style={{ marginLeft: 4 }}>
-                  Tujuan
-                </Text>
-              </View>
-              <Text variant="calloutSemibold" color={colors.text.primary} numberOfLines={1}>
-                {destination.label}
-              </Text>
-            </Pressable>
-          </View>
         </View>
 
         {/* Titik Singgah (Opsional) */}
         <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Lewat Titik Singgah (Opsional)
+          <Text variant="headline" style={styles.sectionTitle}>
+            Lewat mana saja?
           </Text>
-          <Text variant="caption" color={colors.text.secondary} style={{ marginBottom: spacing.xs }}>
-            Membantu sistem mencocokkan lebih banyak paket di jalur Anda
+          <Text variant="caption" color={colors.text.secondary} style={{ marginBottom: spacing.sm }}>
+            Opsional. Makin lengkap, makin banyak paket yang cocok.
           </Text>
           <ChipGroup<string>
             items={stopCandidates.map((p) => ({
@@ -290,12 +228,11 @@ export default function AngkutBuatRuteScreen() {
         {/* Jam Keberangkatan */}
         <View style={styles.section}>
           <TextField
-            label="Jam Berangkat"
+            label="Jam berangkat"
             placeholder="08:00"
             value={departTime}
             onChangeText={setDepartTime}
             leftElement={<Clock size={18} color={colors.text.muted} />}
-            helper="Format 24 jam (misal 08:30)"
           />
           <View style={{ marginTop: spacing.xs }}>
             <ChipGroup<string>
@@ -309,7 +246,7 @@ export default function AngkutBuatRuteScreen() {
         {/* Kapasitas Paket */}
         <View style={styles.section}>
           <NumericStepper
-            label="Kapasitas Paket Maksimal"
+            label="Muat berapa paket?"
             value={maxPackages}
             onChange={setMaxPackages}
             min={1}
@@ -321,7 +258,7 @@ export default function AngkutBuatRuteScreen() {
         {/* Simpangan Maksimal */}
         <View style={styles.section}>
           <NumericStepper
-            label="Simpangan Maksimal dari Rute"
+            label="Mau belok paling jauh"
             value={maxDetourKm}
             onChange={setMaxDetourKm}
             min={1}
@@ -332,8 +269,8 @@ export default function AngkutBuatRuteScreen() {
 
         {/* Ukuran Paket yang Diterima */}
         <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Ukuran Paket yang Diterima
+          <Text variant="headline" style={styles.sectionTitle}>
+            Ukuran yang bisa dibawa
           </Text>
           <ChipGroup<PackageSize>
             items={PACKAGE_SIZES.map((sz) => ({
@@ -346,11 +283,13 @@ export default function AngkutBuatRuteScreen() {
             multiSelect
           />
         </View>
+        </View>
       </ScrollView>
 
       <View style={styles.bottomBar}>
         <Button
-          label="Publikasikan Rute Sekarang"
+          label="Pasang rute"
+          style={{ backgroundColor: colors.sawah }}
           variant="primary"
           size="lg"
           loading={isPending}
@@ -361,7 +300,7 @@ export default function AngkutBuatRuteScreen() {
       <PlacePickerSheet
         visible={pickerTarget !== null}
         onClose={() => setPickerTarget(null)}
-        title={pickerTarget === 'origin' ? 'Pilih Titik Asal' : 'Pilih Titik Tujuan'}
+        title={pickerTarget === 'origin' ? 'Berangkat dari mana?' : 'Menuju ke mana?'}
         selected={pickerTarget === 'origin' ? origin : destination}
         onSelect={(place) => {
           if (pickerTarget === 'origin') setOrigin(place);
@@ -378,12 +317,81 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.lg,
     paddingBottom: 110,
   },
+  body: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+  },
+  map: {
+    borderRadius: 0,
+    borderWidth: 0,
+  },
+  routeCard: {
+    marginHorizontal: spacing.lg,
+    marginTop: -36,
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    ...shadows.float,
+  },
+  pointRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 52,
+  },
+  pointDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    ...shadows.card,
+  },
+  pointText: {
+    flex: 1,
+    marginLeft: spacing.md,
+    paddingVertical: 4,
+  },
+  mapPickBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.sawahLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapPickBtnActive: {
+    backgroundColor: colors.sawah,
+  },
+  routeDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 20,
+  },
+  routeLine: {
+    width: 2,
+    height: 20,
+    marginLeft: 6,
+    backgroundColor: colors.border,
+  },
+  swapBtn: {
+    position: 'absolute',
+    right: 48,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   errorCard: {
     backgroundColor: colors.semantic.dangerLight,
-    marginBottom: spacing.md,
+    margin: spacing.lg,
   },
   mapActionRow: {
     flexDirection: 'row',

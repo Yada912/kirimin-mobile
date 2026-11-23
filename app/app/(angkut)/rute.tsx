@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, FlatList, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Navigation, Plus } from 'lucide-react-native';
+import { Navigation, Plus } from '../../src/ui/icons';
 import { colors, spacing } from '../../src/theme/tokens';
 import {
   Text,
@@ -34,7 +34,7 @@ export default function AngkutRuteScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar
-        title="Rute Saya"
+        title="Rute saya"
         canGoBack={false}
         rightAction={
           <Button
@@ -49,8 +49,8 @@ export default function AngkutRuteScreen() {
       <View style={styles.filterBar}>
         <SegmentedControl<'active' | 'history'>
           options={[
-            { value: 'active', label: 'Rute Terjadwal & Aktif' },
-            { value: 'history', label: 'Riwayat Selesai' },
+            { value: 'active', label: 'Akan datang' },
+            { value: 'history', label: 'Selesai' },
           ]}
           value={tab}
           onChange={setTab}
@@ -69,7 +69,7 @@ export default function AngkutRuteScreen() {
         />
       ) : !trips || trips.length === 0 ? (
         <EmptyState
-          title={tab === 'active' ? 'Belum Ada Rute Aktif' : 'Belum Ada Riwayat Rute'}
+          title={tab === 'active' ? 'Belum ada rute' : 'Belum ada riwayat'}
           description={
             tab === 'active'
               ? 'Publikasikan rute perjalanan rutin Anda untuk menerima permintaan titipan paket.'

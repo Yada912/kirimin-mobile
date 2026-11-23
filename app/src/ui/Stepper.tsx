@@ -9,47 +9,45 @@ export interface StepHeaderProps {
   style?: ViewStyle;
 }
 
+/**
+ * Wizard progress: one thin segment per step, the current step's name underneath.
+ * Compact on purpose (≈40px) so the step's own content — especially maps — gets the space.
+ */
 export function StepHeader({ steps, currentStep, style }: StepHeaderProps) {
   return (
-    <View style={[styles.headerContainer, style]}>
-      {steps.map((label, idx) => {
-        const stepNum = idx + 1;
-        const isActive = stepNum === currentStep;
-        const isDone = stepNum < currentStep;
-
-        return (
-          <React.Fragment key={label}>
-            <View style={styles.stepItem}>
-              <View
-                style={[
-                  styles.circle,
-                  isActive && styles.activeCircle,
-                  isDone && styles.doneCircle,
-                ]}
-              >
-                <Text
-                  variant="captionMedium"
-                  color={isActive || isDone ? colors.text.inverse : colors.text.muted}
-                >
-                  {isDone ? '✓' : String(stepNum)}
-                </Text>
-              </View>
-              <Text
-                variant="caption"
-                color={isActive ? colors.primary : isDone ? colors.text.primary : colors.text.muted}
-                weight={isActive ? '600' : '400'}
-                style={styles.stepLabel}
-                numberOfLines={1}
-              >
-                {label}
-              </Text>
-            </View>
-            {idx < steps.length - 1 && (
-              <View style={[styles.connector, isDone && styles.doneConnector]} />
-            )}
-          </React.Fragment>
-        );
-      })}
+    <View style={[styles.headerContainer, style]} accessibilityRole="progressbar">
+      <View style={styles.segments}>
+        {steps.map((label, idx) => {
+          const n = idx + 1;
+          return (
+            <View
+              key={label}
+              style={[
+                styles.segment,
+                n < currentStep && styles.segmentDone,
+                n === currentStep && styles.segmentActive,
+              ]}
+            />
+          );
+        })}
+      </View>
+      <View style={styles.segmentLabels}>
+        {steps.map((label, idx) => {
+          const n = idx + 1;
+          return (
+            <Text
+              key={label}
+              variant="caption"
+              weight={n === currentStep ? '700' : '500'}
+              color={n === currentStep ? colors.primary : n < currentStep ? colors.text.secondary : colors.text.muted}
+              style={styles.segmentLabel}
+              numberOfLines={1}
+            >
+              {label}
+            </Text>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -126,11 +124,34 @@ export function NumericStepper({
 
 const styles = StyleSheet.create({
   headerContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.surface,
+  },
+  segments: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
+    gap: 6,
+  },
+  segment: {
+    flex: 1,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.surfaceMuted,
+  },
+  segmentDone: {
+    backgroundColor: colors.langit,
+  },
+  segmentActive: {
+    backgroundColor: colors.primary,
+  },
+  segmentLabels: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 6,
+  },
+  segmentLabel: {
+    flex: 1,
   },
   stepItem: {
     alignItems: 'center',

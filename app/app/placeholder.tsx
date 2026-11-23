@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { HelpCircle, ShieldCheck, Bike, FileText } from 'lucide-react-native';
+import { HelpCircle, ShieldCheck, Bike, FileText } from '../src/ui/icons';
 import { colors, spacing } from '../src/theme/tokens';
 import { Text, TopBar, Card, Button, Divider } from '../src/ui';
 import { useAuth } from '../src/auth/AuthContext';
@@ -137,7 +137,7 @@ export default function InfoScreen() {
         </Card>
 
         <Button
-          label="Mengerti & Kembali"
+          label="Kembali"
           variant="primary"
           size="lg"
           onPress={() => router.back()}

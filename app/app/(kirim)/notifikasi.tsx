@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, FlatList, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bell, CheckCheck } from 'lucide-react-native';
+import { Bell, CheckCheck } from '../../src/ui/icons';
 import { colors, spacing } from '../../src/theme/tokens';
 import {
   Text,
@@ -30,7 +30,7 @@ export default function NotifikasiScreen() {
         rightAction={
           unreadCount > 0 ? (
             <Button
-              label="Tandai Baca"
+              label="Tandai dibaca"
               variant="ghost"
               size="sm"
               loading={isMarking}
@@ -52,8 +52,8 @@ export default function NotifikasiScreen() {
         />
       ) : items.length === 0 ? (
         <EmptyState
-          title="Belum Ada Notifikasi"
-          description="Pemberitahuan mengenai status kiriman, perjalanan, atau pesan akan muncul di sini."
+          title="Belum ada notifikasi"
+          description="Kabar soal paket, perjalanan, dan pesan baru muncul di sini."
           icon={<Bell size={44} color={colors.text.muted} />}
         />
       ) : (

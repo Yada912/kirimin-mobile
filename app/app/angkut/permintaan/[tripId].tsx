@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, FlatList, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Inbox, ArrowRight, Play, Check, X } from 'lucide-react-native';
+import { Inbox, ArrowRight, Play, Check, X } from '../../../src/ui/icons';
 import type { IncomingRequest } from '@kirimin/shared';
 import { colors, radii, spacing } from '../../../src/theme/tokens';
 import {
@@ -57,18 +57,8 @@ export default function AngkutPermintaanScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar
-        title={trip?.name ? `Permintaan: ${trip.name}` : 'Permintaan Masuk'}
-        rightAction={
-          trip?.slotsUsed && trip.slotsUsed > 0 ? (
-            <Button
-              label="Perjalanan"
-              variant="primary"
-              size="sm"
-              leftIcon={<Play size={14} color="#FFF" />}
-              onPress={() => router.push({ pathname: '/angkut/jalan/[tripId]', params: { tripId } })}
-            />
-          ) : undefined
-        }
+        title="Permintaan masuk"
+        subtitle={trip?.name}
       />
 
       {isLoading ? (
@@ -83,10 +73,10 @@ export default function AngkutPermintaanScreen() {
         />
       ) : !requests || requests.length === 0 ? (
         <EmptyState
-          title="Belum Ada Permintaan Masuk"
-          description="Pengirim yang memiliki rute searah dengan perjalanan Anda akan muncul di sini."
+          title="Belum ada permintaan"
+          description="Pengirim yang searah dengan rutemu akan muncul di sini."
           icon={<Inbox size={48} color={colors.text.muted} />}
-          actionLabel={trip?.slotsUsed ? 'Buka Perjalanan Aktif' : undefined}
+          actionLabel={undefined}
           onAction={() => router.push({ pathname: '/angkut/jalan/[tripId]', params: { tripId } })}
         />
       ) : (
@@ -124,7 +114,7 @@ export default function AngkutPermintaanScreen() {
                         {item.order.sender.name}
                       </Text>
                       <Text variant="caption" color={colors.text.muted}>
-                        Paket: {item.order.category} ({item.order.size})
+                        {item.order.category}, ukuran {item.order.size}
                       </Text>
                     </View>
                   </View>
@@ -141,7 +131,7 @@ export default function AngkutPermintaanScreen() {
                       variant="captionMedium"
                       color={isDirectRequest ? colors.primary : colors.semantic.warning}
                     >
-                      {isDirectRequest ? 'Permintaan Khusus' : 'Rute Cocok'}
+                      {isDirectRequest ? 'Minta kamu' : 'Searah'}
                     </Text>
                   </View>
                 </View>
@@ -149,10 +139,10 @@ export default function AngkutPermintaanScreen() {
                 {/* Route */}
                 <View style={styles.routeBox}>
                   <Text variant="calloutSemibold" color={colors.text.primary}>
-                    {item.order.pickup.label} → {item.order.dropoff.label}
+                    {item.order.pickup.label} ke {item.order.dropoff.label}
                   </Text>
                   <Text variant="caption" color={colors.text.secondary} style={{ marginTop: 2 }}>
-                    Simpangan: {formatDetour(item.detourKm, item.detourMinutes)}
+                    Belok {formatDetour(item.detourKm, item.detourMinutes)} dari rutemu
                   </Text>
                 </View>
 
@@ -160,7 +150,7 @@ export default function AngkutPermintaanScreen() {
                 <View style={styles.footerRow}>
                   <View>
                     <Text variant="caption" color={colors.text.muted}>
-                      Kamu Dapat
+                      Kamu dapat
                     </Text>
                     <Text variant="headline" color={colors.semantic.success} weight="700">
                       {formatRupiah(item.earning)}
@@ -179,6 +169,7 @@ export default function AngkutPermintaanScreen() {
                     />
                     <Button
                       label="Terima"
+                      style={{ backgroundColor: colors.sawah }}
                       variant="primary"
                       size="sm"
                       fullWidth={false}
@@ -192,11 +183,31 @@ export default function AngkutPermintaanScreen() {
           }}
         />
       )}
+
+      {/* Next step once at least one package is on board. */}
+      {trip?.slotsUsed && trip.slotsUsed > 0 ? (
+        <View style={styles.bottomBar}>
+          <Button
+            label={`Mulai perjalanan (${trip.slotsUsed} paket)`}
+            size="lg"
+            leftIcon={<Play size={18} color="#FFFFFF" weight="fill" />}
+            style={{ backgroundColor: colors.sawah }}
+            onPress={() => router.push({ pathname: '/angkut/jalan/[tripId]', params: { tripId } })}
+            testID="start-trip"
+          />
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  bottomBar: {
+    padding: spacing.lg,
+    backgroundColor: colors.surface,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
   safe: {
     flex: 1,
     backgroundColor: colors.background,

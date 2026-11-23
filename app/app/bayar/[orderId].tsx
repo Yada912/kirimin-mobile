@@ -16,7 +16,7 @@ import {
   RefreshCw,
   FlaskConical,
   ArrowRight,
-} from 'lucide-react-native';
+} from '../../src/ui/icons';
 import type { PaymentChannel, PaymentMethod, PaymentTransaction } from '@kirimin/shared';
 import { PAYMENT_CHANNEL_LABELS, PAYMENT_TX_LABELS } from '@kirimin/shared';
 import { colors, radii, spacing, shadows } from '../../src/theme/tokens';
@@ -30,6 +30,7 @@ import {
   ChipGroup,
   Divider,
   HandoverSparkArt,
+  SuccessBurstArt,
   BrandLogo,
 } from '../../src/ui';
 import {
@@ -147,7 +148,7 @@ export default function BayarScreen() {
       });
       setChoosingMethod(false);
     } catch (err: any) {
-      setPayError(err.message || 'Gagal membuat tagihan pembayaran gateway');
+      setPayError(err.message || 'Tagihan gagal dibuat. Coba lagi.');
     }
   };
 
@@ -161,7 +162,7 @@ export default function BayarScreen() {
         paymentId: tx.id,
         outcome,
         ...(outcome === 'failure'
-          ? { failureReason: 'Pembayaran ditolak penyedia dana (Simulasi Sandbox)' }
+          ? { failureReason: 'Pembayaran ditolak' }
           : {}),
       });
       await Promise.all([refetchTx(), refetchOrder()]);
@@ -169,7 +170,7 @@ export default function BayarScreen() {
         setAttemptSeq((n) => n + 1);
       }
     } catch (err: any) {
-      setPayError(err.message || 'Gagal memproses callback webhook');
+      setPayError(err.message || 'Status pembayaran gagal diperbarui. Coba lagi.');
     }
   };
 
@@ -187,7 +188,7 @@ export default function BayarScreen() {
   if (orderLoading || txLoading || !order) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Pembayaran Gateway" />
+        <TopBar title="Pembayaran" />
         <View style={styles.content}>
           <SkeletonCard />
           <SkeletonCard />
@@ -207,20 +208,14 @@ export default function BayarScreen() {
   if (isPaid) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Struk Pembayaran" subtitle={order.code} />
+        <TopBar title="Bukti bayar" subtitle={order.code} />
         <ScrollView contentContainerStyle={styles.content}>
           <Card variant="elevated" padding="xl" style={styles.receiptCard}>
             <View style={{ alignItems: 'center', marginBottom: spacing.md }}>
               <BrandLogo size="sm" tone="angkut" surface="soft" style={{ alignSelf: 'center', marginBottom: spacing.sm }} />
-              <HandoverSparkArt width={76} height={76} />
-              <View style={styles.verifiedBadge}>
-                <ShieldCheck size={13} color={colors.driverDeep} />
-                <Text variant="captionMedium" color={colors.driverDeep} weight="700" style={{ marginLeft: 4 }}>
-                  TERVERIFIKASI WEBHOOK GATEWAY
-                </Text>
-              </View>
+              <SuccessBurstArt size={96} />
               <Text variant="title" color={colors.text.primary} weight="700" style={{ marginTop: spacing.sm }}>
-                Pembayaran Lunas!
+                Pembayaran diterima
               </Text>
               <Text variant="largeTitle" color={colors.driver} weight="700" style={{ marginTop: 4 }}>
                 {formatRupiah(latestTx?.amount ?? order.price?.total)}
@@ -231,7 +226,7 @@ export default function BayarScreen() {
 
             <View style={styles.receiptRow}>
               <Text variant="caption" color={colors.text.secondary}>
-                Nomor Pesanan
+                Pesanan
               </Text>
               <Text variant="calloutSemibold" color={colors.text.primary}>
                 {order.code}
@@ -241,15 +236,7 @@ export default function BayarScreen() {
               <>
                 <View style={styles.receiptRow}>
                   <Text variant="caption" color={colors.text.secondary}>
-                    Referensi Gateway
-                  </Text>
-                  <Text variant="captionMedium" color={colors.text.primary} weight="700" style={{ marginLeft: spacing.md, flexShrink: 1, textAlign: 'right' }}>
-                    {latestTx.gatewayRef}
-                  </Text>
-                </View>
-                <View style={styles.receiptRow}>
-                  <Text variant="caption" color={colors.text.secondary}>
-                    Channel Pembayaran
+                    Dibayar lewat
                   </Text>
                   <Text variant="captionMedium" color={colors.text.primary} weight="700" style={{ marginLeft: spacing.md, flexShrink: 1, textAlign: 'right' }}>
                     {PAYMENT_CHANNEL_LABELS[latestTx.channel]}
@@ -257,7 +244,7 @@ export default function BayarScreen() {
                 </View>
                 <View style={styles.receiptRow}>
                   <Text variant="caption" color={colors.text.secondary}>
-                    Waktu Lunas
+                    Waktu
                   </Text>
                   <Text variant="captionMedium" color={colors.text.primary}>
                     {formatDateTime(latestTx.paidAt || latestTx.updatedAt)}
@@ -267,7 +254,7 @@ export default function BayarScreen() {
             ) : null}
 
             <Button
-              label="Lacak Pesanan Sekarang"
+              label="Lacak paket"
               variant="primary"
               size="lg"
               rightIcon={<ArrowRight size={17} color="#FFF" />}
@@ -287,7 +274,7 @@ export default function BayarScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <TopBar
-          title="Selesaikan Pembayaran"
+          title="Selesaikan pembayaran"
           subtitle={`${PAYMENT_CHANNEL_LABELS[activePendingTx.channel]}`}
           rightAction={
             <Pressable
@@ -373,8 +360,8 @@ export default function BayarScreen() {
                     style={{ marginLeft: 5 }}
                   >
                     {copiedText === activePendingTx.instructions.qrString
-                      ? 'Payload QRIS Disalin'
-                      : 'Salin Payload QRIS (EMVCo)'}
+                      ? 'Kode QRIS disalin'
+                      : 'Salin kode QRIS'}
                   </Text>
                 </Pressable>
               </View>
@@ -451,7 +438,7 @@ export default function BayarScreen() {
             {/* Step-by-step payment guide from gateway */}
             <Divider style={{ marginVertical: spacing.md }} />
             <Text variant="captionMedium" color={colors.text.secondary} weight="700" style={{ marginBottom: 6 }}>
-              Cara Pembayaran:
+              Cara bayar
             </Text>
             {activePendingTx.instructions.steps.map((step, i) => (
               <View key={i} style={styles.stepLine}>
@@ -473,15 +460,15 @@ export default function BayarScreen() {
               <View style={styles.sandboxHeader}>
                 <FlaskConical size={16} color={colors.accent.violet} />
                 <Text variant="calloutSemibold" color={colors.accent.violet} style={{ marginLeft: 6 }}>
-                  Simulator Payment Gateway (Sandbox)
+                  Pembayaran uji coba
                 </Text>
               </View>
               <Text variant="caption" color={colors.text.secondary} style={{ marginBottom: spacing.md, lineHeight: 18 }}>
-                Mengirim callback webhook bertanda tangan SHA-512 asli ke server (POST /webhooks/payments) dan memperbarui status secara realtime via SSE.
+                Belum tersambung ke bank sungguhan. Pilih hasil pembayaran untuk mencoba alurnya.
               </Text>
 
               <Button
-                label="Simulasikan Bayar Berhasil (Settlement)"
+                label="Anggap sudah dibayar"
                 variant="primary"
                 size="lg"
                 loading={simulating}
@@ -497,7 +484,7 @@ export default function BayarScreen() {
                   style={styles.sandboxFailBtn}
                 >
                   <Text variant="captionMedium" color={colors.semantic.danger} weight="700">
-                    Simulasi Gagal
+                    Anggap gagal
                   </Text>
                 </Pressable>
                 <Pressable
@@ -506,7 +493,7 @@ export default function BayarScreen() {
                   style={styles.sandboxExpireBtn}
                 >
                   <Text variant="captionMedium" color={colors.semantic.warning} weight="700">
-                    Simulasi Kedaluwarsa
+                    Anggap kedaluwarsa
                   </Text>
                 </Pressable>
               </View>
@@ -514,7 +501,7 @@ export default function BayarScreen() {
           ) : null}
 
           <Button
-            label="Cek Status Pembayaran"
+            label="Cek status"
             variant="ghost"
             size="md"
             leftIcon={<RefreshCw size={15} color={colors.primary} />}
@@ -525,7 +512,7 @@ export default function BayarScreen() {
             style={{ marginTop: spacing.xs }}
           />
           <Button
-            label="Bayar Nanti"
+            label="Bayar nanti"
             variant="ghost"
             size="sm"
             onPress={navigateToTracking}
@@ -539,33 +526,33 @@ export default function BayarScreen() {
   const methods: { id: PaymentMethod; label: string; desc: string; icon: any }[] = [
     {
       id: 'qris',
-      label: 'QRIS Dinamis',
-      desc: 'Scan instan dari GoPay, DANA, OVO, atau M-Banking',
+      label: 'QRIS',
+      desc: 'Scan pakai GoPay, DANA, OVO, atau m-banking',
       icon: QrCode,
     },
     {
       id: 'ewallet',
-      label: 'Dompet Digital (E-Wallet)',
-      desc: 'GoPay, ShopeePay, DANA, OVO (Deep-Link)',
+      label: 'Dompet digital',
+      desc: 'GoPay, ShopeePay, DANA, OVO',
       icon: Wallet,
     },
     {
       id: 'bank_va',
-      label: 'Virtual Account Bank',
-      desc: 'BCA, Mandiri, BNI, BRI (Verifikasi Otomatis)',
+      label: 'Transfer bank',
+      desc: 'BCA, Mandiri, BNI, BRI',
       icon: CreditCard,
     },
     {
       id: 'cash',
-      label: 'Tunai ke Driver (COD)',
-      desc: 'Bayar langsung saat penjemputan atau serah terima',
+      label: 'Tunai ke pengemudi',
+      desc: 'Bayar saat paket dijemput atau diserahkan',
       icon: Banknote,
     },
   ];
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Pilih Pembayaran" subtitle={order.code} />
+      <TopBar title="Bayar pakai apa?" subtitle={order.code} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {payError ? (
@@ -585,7 +572,7 @@ export default function BayarScreen() {
               </Text>
             </View>
             <Text variant="caption" color={colors.text.secondary} style={{ marginTop: 3 }}>
-              Ref {lastFailedOrExpiredTx.gatewayRef} tidak berhasil diselesaikan. Silakan buat tagihan baru di bawah.
+              Pilih cara bayar lagi untuk membuat tagihan baru.
             </Text>
           </Card>
         ) : null}
@@ -593,26 +580,17 @@ export default function BayarScreen() {
         {/* Total Bill Banner */}
         <View style={styles.totalHero}>
           <View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <BrandLogo size="xs" tone="light" />
-              <Text variant="caption" color="#DBEAFE">
-                • Total Tagihan
-              </Text>
-            </View>
+            <Text variant="callout" color={colors.langit}>
+              Total yang dibayar
+            </Text>
             <Text variant="largeTitle" color="#FFFFFF" weight="700" style={{ marginTop: 3 }}>
               {formatRupiah(order.price?.total)}
-            </Text>
-          </View>
-          <View style={styles.gatewayPill}>
-            <ShieldCheck size={13} color="#A7F3D0" />
-            <Text variant="caption" color="#ECFDF5" weight="700" style={{ marginLeft: 4, fontSize: 10 }}>
-              GATEWAY AMAN
             </Text>
           </View>
         </View>
 
         <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-          Metode Pembayaran
+          Pilih cara bayar
         </Text>
 
         <View style={styles.methodList}>
@@ -688,7 +666,7 @@ export default function BayarScreen() {
           testID="create-payment-intent-btn"
         />
         <Button
-          label="Bayar Nanti"
+          label="Bayar nanti"
           variant="ghost"
           size="sm"
           onPress={navigateToTracking}

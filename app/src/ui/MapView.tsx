@@ -32,7 +32,7 @@ import {
   Moon,
   Sun,
   Clock,
-} from 'lucide-react-native';
+} from './icons';
 import type { Place, LatLng } from '@kirimin/shared';
 import { colors, radii, spacing, shadows } from '../theme/tokens';
 import { Text } from './Text';
@@ -231,7 +231,7 @@ export function MapView({
         id: 'driver',
         lat: driverLocation.lat,
         lng: driverLocation.lng,
-        title: 'Posisi Driver Aktif',
+        title: 'Posisi pengemudi',
         subtitle: navProgress.activeStep?.roadName
           ? `Melintas di ${navProgress.activeStep.roadName}`
           : 'Sedang bergerak di rute',
@@ -246,7 +246,7 @@ export function MapView({
         lat: DEFAULT_CENTER.lat,
         lng: DEFAULT_CENTER.lng,
         title: 'Koridor Denpasar – Bukit',
-        subtitle: 'Area layanan aktif Kirimin Bali',
+        subtitle: 'Area layanan',
         color: colors.primary,
       });
     }
@@ -799,7 +799,7 @@ export function MapView({
               border: 'none',
               borderRadius: fullscreenSurface ? 0 : radii.lg,
             }}
-            title="Kirimin Interactive Road Map"
+            title="Peta"
           />
         ) : (
           <NativeWebView
@@ -860,7 +860,7 @@ export function MapView({
           <View style={styles.selectionBanner} pointerEvents="none">
             <MapPin size={12} color="#FFF" />
             <Text variant="captionMedium" color="#FFF" weight="700" style={{ marginLeft: 5, fontSize: 11 }}>
-              Ketuk peta untuk atur titik {selectionMode === 'pickup' ? 'Jemput / Asal' : 'Antar / Tujuan'}
+              Ketuk peta untuk memindah titik {selectionMode === 'pickup' ? 'jemput' : 'antar'}
             </Text>
           </View>
         ) : null}
@@ -1003,10 +1003,10 @@ export function MapView({
           >
             {(
               [
-                { id: 'apple', label: 'Peta Bersih (Nav)', icon: 'sun' },
-                { id: 'osm', label: 'Peta Jalan Detail', icon: 'map' },
-                { id: 'dark', label: 'Mode Malam (Driver)', icon: 'moon' },
-                { id: 'vector', label: 'Vektor Offline', icon: 'offline' },
+                { id: 'apple', label: 'Bersih', icon: 'sun' },
+                { id: 'osm', label: 'Detail', icon: 'map' },
+                { id: 'dark', label: 'Malam', icon: 'moon' },
+                { id: 'vector', label: 'Sederhana', icon: 'offline' },
               ] as const
             ).map((opt) => {
               const active = layer === opt.id;
@@ -1056,7 +1056,7 @@ export function MapView({
           <Pressable onPress={() => setIsFullscreen(false)} style={styles.fullscreenClosePill}>
             <Minimize2 size={15} color="#FFFFFF" />
             <Text variant="captionMedium" color="#FFFFFF" weight="700" style={{ marginLeft: 6 }}>
-              Tutup Layar Penuh
+              Tutup
             </Text>
           </Pressable>
         </View>
@@ -1076,7 +1076,7 @@ export function MapView({
             <View style={styles.stepsHeader}>
               <View>
                 <Text variant="headline" color={colors.text.primary} weight="700">
-                  Panduan Rute Jalan
+                  Petunjuk arah
                 </Text>
                 <Text variant="caption" color={colors.text.secondary}>
                   Estimasi {roadRoute.durationMin} menit • {roadRoute.distanceKm.toFixed(1).replace('.', ',')} km ({roadRoute.steps.length} langkah)

@@ -1,8 +1,9 @@
+import { HANDLING_LABELS } from '@kirimin/shared';
 import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, ShieldCheck, User, Package, MessageSquare } from 'lucide-react-native';
+import { MapPin, ShieldCheck, User, Package, MessageSquare } from '../../../src/ui/icons';
 import { colors, radii, spacing } from '../../../src/theme/tokens';
 import {
   Text,
@@ -33,7 +34,7 @@ export default function AngkutDetailPermintaanScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Detail Permintaan" />
+        <TopBar title="Detail permintaan" />
         <View style={styles.content}>
           <SkeletonCard />
           <SkeletonCard />
@@ -45,7 +46,7 @@ export default function AngkutDetailPermintaanScreen() {
   if (isError || !order) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Detail Permintaan" />
+        <TopBar title="Detail permintaan" />
         <ErrorState message={(error as any)?.message || 'Pesanan tidak ditemukan'} onRetry={() => refetch()} />
       </SafeAreaView>
     );
@@ -80,7 +81,7 @@ export default function AngkutDetailPermintaanScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Detail Permintaan" />
+      <TopBar title="Detail permintaan" />
 
       <ScrollView contentContainerStyle={styles.content}>
         {actionError && (
@@ -122,14 +123,14 @@ export default function AngkutDetailPermintaanScreen() {
           <View style={styles.earningRow}>
             <View>
               <Text variant="captionMedium" color={colors.semantic.success}>
-                Pendapatan Pengemudi
+                Kamu dapat
               </Text>
               <Text variant="largeTitle" color={colors.semantic.success} weight="700">
                 {formatRupiah(driverEarning)}
               </Text>
             </View>
             <Text variant="caption" color={colors.text.muted}>
-              Dibayarkan saat serah terima
+              Dibayar saat paket diserahkan
             </Text>
           </View>
         </Card>
@@ -137,11 +138,11 @@ export default function AngkutDetailPermintaanScreen() {
         {/* Package Details */}
         <Card variant="outlined" padding="md" style={styles.card}>
           <Text variant="headline" color={colors.text.primary} weight="700" style={{ marginBottom: spacing.sm }}>
-            Rincian Barang Titipan
+            Paketnya
           </Text>
           <View style={styles.detailRow}>
             <Text variant="callout" color={colors.text.secondary}>
-              Kategori & Ukuran
+              Isi dan ukuran
             </Text>
             <Text variant="calloutSemibold" color={colors.text.primary}>
               {order.category} (Ukuran {order.size})
@@ -154,7 +155,7 @@ export default function AngkutDetailPermintaanScreen() {
                 Penanganan
               </Text>
               <Text variant="calloutSemibold" color={colors.semantic.warning}>
-                {order.handling.join(', ')}
+                {order.handling.map((h) => HANDLING_LABELS[h] ?? h).join(', ')}
               </Text>
             </View>
           )}
@@ -173,7 +174,7 @@ export default function AngkutDetailPermintaanScreen() {
           {photoFullUrl && (
             <View style={{ marginTop: spacing.md }}>
               <Text variant="caption" color={colors.text.muted} style={{ marginBottom: 4 }}>
-                Foto Paket:
+                Foto
               </Text>
               <Image source={{ uri: photoFullUrl }} style={styles.packageImage} resizeMode="cover" />
             </View>
@@ -183,7 +184,7 @@ export default function AngkutDetailPermintaanScreen() {
         {/* Pickup & Dropoff Address */}
         <Card variant="outlined" padding="md" style={styles.card}>
           <Text variant="headline" color={colors.text.primary} weight="700" style={{ marginBottom: spacing.sm }}>
-            Alamat Titik Temu
+            Jemput dan antar
           </Text>
           <View style={styles.addressRow}>
             <MapPin size={18} color={colors.primary} />
@@ -201,7 +202,7 @@ export default function AngkutDetailPermintaanScreen() {
             <MapPin size={18} color={colors.semantic.success} />
             <View style={{ flex: 1, marginLeft: spacing.sm }}>
               <Text variant="caption" color={colors.text.muted}>
-                Antar (Penerima: {order.recipient.name} - {order.recipient.phone})
+                Antar ke {order.recipient.name}
               </Text>
               <Text variant="calloutSemibold" color={colors.text.primary}>
                 {order.dropoff.label}
@@ -223,13 +224,13 @@ export default function AngkutDetailPermintaanScreen() {
           style={styles.actionBtn}
         />
         <Button
-          label="Terima Titipan"
+          label="Terima paket"
           variant="primary"
           size="lg"
           loading={isAccepting}
           disabled={isDeclining}
           onPress={handleAccept}
-          style={[styles.actionBtn, { flex: 2 }]}
+          style={[styles.actionBtn, { flex: 2, backgroundColor: colors.sawah }]}
         />
       </View>
     </SafeAreaView>

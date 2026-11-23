@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft } from './icons';
 import { colors, spacing, touchTarget } from '../theme/tokens';
 import { Text } from './Text';
 import { IconButton } from './IconButton';
@@ -46,7 +46,7 @@ export function TopBar({
       </View>
 
       <View style={styles.center}>
-        {title && (
+        {title ? (
           <Text
             variant="headline"
             color={colors.text.primary}
@@ -56,8 +56,8 @@ export function TopBar({
           >
             {title}
           </Text>
-        )}
-        {subtitle && (
+        ) : null}
+        {subtitle ? (
           <Text
             variant="caption"
             color={colors.text.secondary}
@@ -66,7 +66,7 @@ export function TopBar({
           >
             {subtitle}
           </Text>
-        )}
+        ) : null}
       </View>
 
       <View style={styles.right}>{rightAction}</View>

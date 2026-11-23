@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import EventSource from 'react-native-sse';
 import { useQueryClient } from '@tanstack/react-query';
 import type { RealtimeEvent } from '@kirimin/shared';
-import { getApiBaseUrl } from '../utils/config';
+import { getApiBaseUrl, onServerUrlChange } from '../utils/config';
 import { useAuth } from '../auth/AuthContext';
 import { queryKeys } from './hooks/useApi';
 
@@ -10,6 +10,9 @@ export function useRealtimeSubscription() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const esRef = useRef<EventSource | null>(null);
+  // Bumped when the user points the app at a different server, so we reconnect there.
+  const [serverKey, setServerKey] = useState(0);
+  useEffect(() => onServerUrlChange(() => setServerKey((k) => k + 1)), []);
 
   useEffect(() => {
     if (!token) {
@@ -96,6 +99,6 @@ export function useRealtimeSubscription() {
       if (es) es.close();
       esRef.current = null;
     };
-  }, [token, queryClient]);
+  }, [token, queryClient, serverKey]);
 }
 

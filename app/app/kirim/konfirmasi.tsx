@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MapPin, User, Package, Bike, CreditCard } from 'lucide-react-native';
+import { MapPin, User, Package, Bike, CreditCard } from '../../src/ui/icons';
 import type { PaymentMethod, TripMatch } from '@kirimin/shared';
 import { PAYMENT_METHODS } from '@kirimin/shared';
 import { colors, radii, spacing } from '../../src/theme/tokens';
@@ -18,8 +18,7 @@ import {
   Divider,
 } from '../../src/ui';
 import { useCreateOrder } from '../../src/api/hooks/useApi';
-import { confirmPrice, orderPayload, readKirimDraft } from '../../src/features/kirim/draft';
-import { formatSimilarity } from '../../src/utils/format';
+import { KIRIM_STEPS, confirmPrice, orderPayload, readKirimDraft } from '../../src/features/kirim/draft';
 
 export default function KirimKonfirmasiScreen() {
   const router = useRouter();
@@ -55,11 +54,8 @@ export default function KirimKonfirmasiScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Tinjau & Konfirmasi" />
-      <StepHeader
-        steps={['Paket', 'Rute', 'Driver', 'Konfirmasi']}
-        currentStep={4}
-      />
+      <TopBar title="Cek lalu kirim" />
+      <StepHeader steps={KIRIM_STEPS} currentStep={4} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {error && (
@@ -72,8 +68,8 @@ export default function KirimKonfirmasiScreen() {
 
         {/* Driver Yang Dipilih */}
         <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Pengemudi yang Dituju
+          <Text variant="headline" style={styles.sectionTitle}>
+            Pengemudi
           </Text>
           <Card variant="outlined" padding="md" style={styles.driverCard}>
             {matchData ? (
@@ -84,10 +80,10 @@ export default function KirimKonfirmasiScreen() {
                     {matchData.trip.driver.name}
                   </Text>
                   <Text variant="caption" color={colors.text.secondary}>
-                    Kendaraan: {matchData.trip.vehicle.plate} ({matchData.trip.vehicle.type})
+                    {matchData.trip.vehicle.type === 'mobil' ? 'Mobil' : 'Motor'} {matchData.trip.vehicle.plate}
                   </Text>
                   <Text variant="caption" color={colors.primary} weight="600" style={{ marginTop: 2 }}>
-                    {matchData.kind === 'direct' ? 'Rute Langsung' : 'Dengan Simpangan'} • {formatSimilarity(matchData.similarity)} searah
+                    {matchData.kind === 'direct' ? 'Lewat rutemu' : 'Belok sedikit dari rutenya'}
                   </Text>
                 </View>
               </View>
@@ -96,10 +92,10 @@ export default function KirimKonfirmasiScreen() {
                 <Bike size={24} color={colors.primary} />
                 <View style={{ flex: 1, marginLeft: spacing.md }}>
                   <Text variant="headline" color={colors.text.primary} weight="700">
-                    Permintaan Terbuka
+                    Semua pengemudi
                   </Text>
                   <Text variant="caption" color={colors.text.secondary}>
-                    Akan dikirim ke semua pengemudi yang melewati rute ini.
+                    Siapa pun yang lewat rute ini bisa menerima paketmu.
                   </Text>
                 </View>
               </View>
@@ -109,15 +105,15 @@ export default function KirimKonfirmasiScreen() {
 
         {/* Ringkasan Rute */}
         <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Rute Pengiriman
+          <Text variant="headline" style={styles.sectionTitle}>
+            Rute
           </Text>
           <Card variant="outlined" padding="md">
             <View style={styles.infoRow}>
               <MapPin size={18} color={colors.primary} />
               <View style={styles.infoCol}>
                 <Text variant="caption" color={colors.text.muted}>
-                  Titik Jemput
+                  Jemput di
                 </Text>
                 <Text variant="calloutSemibold" color={colors.text.primary}>
                   {pickup?.label}
@@ -131,7 +127,7 @@ export default function KirimKonfirmasiScreen() {
               <MapPin size={18} color={colors.semantic.success} />
               <View style={styles.infoCol}>
                 <Text variant="caption" color={colors.text.muted}>
-                  Titik Antar (Penerima: {recipient?.name} - {recipient?.phone})
+                  Antar ke {recipient?.name} ({recipient?.phone})
                 </Text>
                 <Text variant="calloutSemibold" color={colors.text.primary}>
                   {dropoff?.label}
@@ -143,22 +139,22 @@ export default function KirimKonfirmasiScreen() {
 
         {/* Ringkasan Paket */}
         <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
+          <Text variant="headline" style={styles.sectionTitle}>
             Paket
           </Text>
           <Card variant="outlined" padding="md">
             <View style={styles.packageRow}>
               <Text variant="callout" color={colors.text.secondary}>
-                Kategori / Ukuran:
+                Isi dan ukuran
               </Text>
               <Text variant="calloutSemibold" color={colors.text.primary}>
-                {params.category} • Ukuran {params.size}
+                {params.category}, ukuran {params.size}
               </Text>
             </View>
             {params.notes ? (
               <View style={styles.packageRow}>
                 <Text variant="callout" color={colors.text.secondary}>
-                  Catatan:
+                  Catatan
                 </Text>
                 <Text variant="callout" color={colors.text.primary} style={{ flex: 1, textAlign: 'right' }}>
                   {params.notes as string}
@@ -170,15 +166,15 @@ export default function KirimKonfirmasiScreen() {
 
         {/* Metode Pembayaran */}
         <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Metode Pembayaran
+          <Text variant="headline" style={styles.sectionTitle}>
+            Bayar pakai
           </Text>
           <ChipGroup<PaymentMethod>
             items={[
-              { value: 'cash', label: 'Tunai ke Driver' },
+              { value: 'cash', label: 'Tunai ke pengemudi' },
               { value: 'qris', label: 'QRIS' },
               { value: 'ewallet', label: 'E-Wallet' },
-              { value: 'bank_va', label: 'Virtual Account' },
+              { value: 'bank_va', label: 'Transfer bank' },
             ]}
             value={paymentMethod}
             onChange={setPaymentMethod}
@@ -187,15 +183,15 @@ export default function KirimKonfirmasiScreen() {
 
         {/* Rincian Biaya */}
         <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Rincian Pembayaran
+          <Text variant="headline" style={styles.sectionTitle}>
+            Ongkos
           </Text>
           <Card variant="elevated" padding="lg">
             {price ? (
               <PriceRow fee={price.fee} serviceFee={price.serviceFee} total={price.total} />
             ) : (
               <Text variant="callout" color={colors.text.secondary}>
-                Ongkos ditentukan saat driver menerima permintaanmu.
+                Ongkos muncul setelah ada pengemudi yang menerima.
               </Text>
             )}
           </Card>
@@ -205,7 +201,7 @@ export default function KirimKonfirmasiScreen() {
       {/* Submit Button */}
       <View style={styles.bottomBar}>
         <Button
-          label={tripId ? 'Kirim Permintaan ke Driver' : 'Posting Permintaan Terbuka'}
+          label={tripId ? `Kirim ke ${matchData?.trip.driver.name.split(' ')[0] ?? 'pengemudi'}` : 'Kirim ke semua pengemudi'}
           variant="primary"
           size="lg"
           loading={isPending}

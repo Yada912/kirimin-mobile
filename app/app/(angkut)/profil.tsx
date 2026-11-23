@@ -12,7 +12,8 @@ import {
   SlidersHorizontal,
   Bookmark,
   UserCog,
-} from 'lucide-react-native';
+  Radio,
+} from '../../src/ui/icons';
 import { colors, radii, spacing } from '../../src/theme/tokens';
 import {
   Text,
@@ -23,6 +24,7 @@ import {
   ListItem,
   Divider,
   Dialog,
+  ServerSettingsSheet,
 } from '../../src/ui';
 import { useAuth } from '../../src/auth/AuthContext';
 
@@ -30,6 +32,7 @@ export default function AngkutProfilScreen() {
   const router = useRouter();
   const { user, logout, switchRole } = useAuth();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showServer, setShowServer] = useState(false);
   const [switching, setSwitching] = useState(false);
 
   const handleSwitchRole = async () => {
@@ -54,7 +57,7 @@ export default function AngkutProfilScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Profil Pengemudi" canGoBack={false} />
+      <TopBar title="Profil" canGoBack={false} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* User Card */}
@@ -119,15 +122,15 @@ export default function AngkutProfilScreen() {
             </View>
             <View style={{ flex: 1, marginLeft: spacing.md }}>
               <Text variant="headline" color={colors.text.primary} weight="600">
-                Beralih ke Mode Kirim
+                Mau kirim paket?
               </Text>
               <Text variant="caption" color={colors.text.secondary}>
-                Kirim paket titipan melalui pengemudi searah.
+                Titipkan ke pengendara yang lewat tujuanmu.
               </Text>
             </View>
           </View>
           <Button
-            label="Ganti ke Kirim (Pengirim)"
+            label="Ganti ke pengirim"
             variant="outline"
             size="md"
             loading={switching}
@@ -139,7 +142,7 @@ export default function AngkutProfilScreen() {
         {/* Menu Section */}
         <View style={styles.menuCard}>
           <ListItem
-            title="Edit Profil, Kendaraan & Notifikasi"
+            title="Ubah profil"
             subtitle={`${vehicle.type.toUpperCase()} - ${vehicle.plate}`}
             leftIcon={<UserCog size={22} color={colors.driver} />}
             onPress={() => router.push('/kelola/profil')}
@@ -147,32 +150,40 @@ export default function AngkutProfilScreen() {
           />
           <Divider />
           <ListItem
-            title="Kelola Preset Rute Cepat"
-            subtitle="Buat & ubah template rute harianmu"
+            title="Rute favorit"
+            subtitle="Rute yang sering kamu pakai"
             leftIcon={<SlidersHorizontal size={22} color={colors.accent.coral} />}
             onPress={() => router.push('/kelola/preset')}
             showChevron
           />
           <Divider />
           <ListItem
-            title="Lokasi Tersimpan Saya"
-            subtitle="Titik asal, singgah, & tujuan favorit"
+            title="Alamat tersimpan"
+            subtitle="Rumah, kos, kampus, kantor"
             leftIcon={<Bookmark size={22} color={colors.accent.violet} />}
             onPress={() => router.push('/kelola/lokasi')}
             showChevron
           />
           <Divider />
           <ListItem
-            title="Bantuan & Dukungan Driver"
-            subtitle="Panduan operasional dan serah terima"
+            title="Alamat server"
+            subtitle="Sambungkan ke server di PC atau tunnel"
+            leftIcon={<Radio size={22} color={colors.primary} />}
+            onPress={() => setShowServer(true)}
+            showChevron
+          />
+          <Divider />
+          <ListItem
+            title="Bantuan"
+            subtitle="Cara menjemput dan menyerahkan paket"
             leftIcon={<HelpCircle size={22} color={colors.primary} />}
             onPress={() => router.push({ pathname: '/placeholder', params: { topic: 'bantuan-driver' } })}
             showChevron
           />
           <Divider />
           <ListItem
-            title="Ketentuan & Syarat Driver"
-            subtitle="Aturan pembatalan dan asuransi titipan"
+            title="Ketentuan"
+            subtitle="Pembatalan dan tanggung jawab paket"
             leftIcon={<FileText size={22} color={colors.primary} />}
             onPress={() => router.push({ pathname: '/placeholder', params: { topic: 'syarat-driver' } })}
             showChevron
@@ -181,7 +192,7 @@ export default function AngkutProfilScreen() {
 
         {/* Logout Button */}
         <Button
-          label="Keluar dari Akun"
+          label="Keluar"
           variant="ghost"
           size="lg"
           leftIcon={<LogOut size={18} color={colors.semantic.danger} />}
@@ -190,12 +201,14 @@ export default function AngkutProfilScreen() {
         />
       </ScrollView>
 
+      <ServerSettingsSheet visible={showServer} onClose={() => setShowServer(false)} />
+
       {/* Logout Confirmation Dialog */}
       <Dialog
         visible={showLogoutDialog}
-        title="Keluar dari Akun?"
+        title="Keluar dari akun?"
         message="Anda akan keluar dari sesi ini dan perlu masuk kembali untuk menerima pesanan."
-        confirmLabel="Ya, Keluar"
+        confirmLabel="Keluar"
         cancelLabel="Batal"
         isDestructive
         onConfirm={handleLogout}

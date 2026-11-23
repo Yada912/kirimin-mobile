@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { StyleSheet, View, ScrollView, RefreshControl, Pressable, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -13,7 +13,7 @@ import {
   MapPin,
   ShieldCheck,
   Navigation,
-} from 'lucide-react-native';
+} from '../../../src/ui/icons';
 import type { LatLng } from '@kirimin/shared';
 import { colors, radii, spacing, shadows } from '../../../src/theme/tokens';
 import {
@@ -39,6 +39,7 @@ import { interpolateAlongRoute } from '../../../src/constants/places';
 import type { RoadRoute } from '../../../src/utils/routing';
 
 export default function AngkutJalanScreen() {
+  const { height: screenH } = useWindowDimensions();
   const router = useRouter();
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
 
@@ -169,7 +170,7 @@ export default function AngkutJalanScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Navigasi Perjalanan" />
+        <TopBar title="Perjalanan" />
         <View style={styles.content}>
           <SkeletonCard />
           <SkeletonCard />
@@ -181,9 +182,9 @@ export default function AngkutJalanScreen() {
   if (isError || !manifest || !trip) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Navigasi Perjalanan" />
+        <TopBar title="Perjalanan" />
         <ErrorState
-          message={(error as any)?.message || 'Gagal memuat manifest perjalanan'}
+          message={(error as any)?.message || 'Data perjalanan tidak bisa dimuat'}
           onRetry={() => refetch()}
         />
       </SafeAreaView>
@@ -238,11 +239,13 @@ export default function AngkutJalanScreen() {
     }
   };
 
+  const mapHeight = Math.round(Math.max(300, Math.min(500, screenH * 0.5)));
+
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar
         title={trip.name}
-        subtitle={`${trip.origin.label} → ${trip.destination.label}`}
+        subtitle={`${trip.origin.label} ke ${trip.destination.label}`}
         rightAction={<StatusPill status={trip.status} />}
       />
 
@@ -254,7 +257,7 @@ export default function AngkutJalanScreen() {
           stops={trip.stops}
           markers={mapMarkers}
           driverLocation={activeDriverGps}
-          height={310}
+          height={mapHeight}
           showSettings
           navigationMode
           allowExpand
@@ -269,14 +272,14 @@ export default function AngkutJalanScreen() {
               <View style={styles.liveDot} />
               <Radio size={13} color={colors.driver} />
               <Text variant="captionMedium" color={colors.driverDeep} weight="700" style={{ marginLeft: 4 }}>
-                GPS Live • {Math.round(routeProgress * 100)}%
+                Lokasimu dibagikan, {Math.round(routeProgress * 100)}% rute
               </Text>
             </View>
             <View style={styles.gpsActions}>
               <Pressable
                 onPress={() => setSimPlaying((v) => !v)}
                 style={styles.gpsMiniBtn}
-                accessibilityLabel={simPlaying ? 'Jeda simulasi GPS' : 'Lanjut simulasi GPS'}
+                accessibilityLabel={simPlaying ? 'Jeda posisi uji' : 'Jalankan posisi uji'}
               >
                 {simPlaying ? (
                   <Pause size={12} color={colors.driver} />
@@ -337,15 +340,15 @@ export default function AngkutJalanScreen() {
               </View>
               <View style={{ flex: 1, marginLeft: spacing.sm }}>
                 <Text variant="headline" color={colors.text.primary} weight="700">
-                  Siap Berangkat ({orders.length} Paket)
+                  Siap berangkat dengan {orders.length} paket
                 </Text>
                 <Text variant="caption" color={colors.text.secondary}>
-                  Aktifkan navigasi rute & kirim posisi live ke pengirim
+                  Pengirim bisa melihat posisimu selama perjalanan.
                 </Text>
               </View>
             </View>
             <Button
-              label="Mulai Perjalanan & Navigasi"
+              label="Mulai perjalanan"
               variant="primary"
               size="lg"
               leftIcon={<Play size={18} color="#FFF" />}
@@ -360,15 +363,15 @@ export default function AngkutJalanScreen() {
               <CheckCircle size={28} color={colors.driver} />
               <View style={{ flex: 1, marginLeft: spacing.sm }}>
                 <Text variant="headline" color={colors.driverDeep} weight="700">
-                  Semua Paket Selesai Diantar!
+                  Semua paket sudah diantar
                 </Text>
                 <Text variant="caption" color={colors.text.secondary}>
-                  Tutup perjalanan untuk mencatat pendapatan ke dompet driver.
+                  Selesaikan perjalanan supaya penghasilanmu tercatat.
                 </Text>
               </View>
             </View>
             <Button
-              label="Selesaikan Rute Perjalanan"
+              label="Selesaikan perjalanan"
               variant="primary"
               size="lg"
               loading={isCompleting}
@@ -383,10 +386,10 @@ export default function AngkutJalanScreen() {
                 <Package size={12} color={colors.driverDeep} />
                 <Text variant="captionMedium" color={colors.driverDeep} weight="700" style={{ marginLeft: 4 }}>
                   {nextActiveOrder.status === 'accepted'
-                    ? 'TAHAP BERIKUTNYA: JEMPUT'
+                    ? 'Berikutnya: jemput'
                     : nextActiveOrder.status === 'arrived'
-                      ? 'TAHAP BERIKUTNYA: SERAH TERIMA'
-                      : 'TAHAP BERIKUTNYA: ANTAR'}
+                      ? 'Berikutnya: serahkan paket'
+                      : 'Berikutnya: antar'}
                 </Text>
               </View>
               <StatusPill status={nextActiveOrder.status} />
@@ -398,17 +401,16 @@ export default function AngkutJalanScreen() {
                 : nextActiveOrder.dropoff.label}
             </Text>
             <Text variant="caption" color={colors.text.secondary} style={{ marginTop: 2, marginBottom: spacing.sm }}>
-              {nextActiveOrder.code} •{' '}
               {nextActiveOrder.status === 'accepted'
-                ? `Pengirim: ${nextActiveOrder.sender.name}`
-                : `Penerima: ${nextActiveOrder.recipient.name} (${nextActiveOrder.recipient.phone})`}
+                ? `Dari ${nextActiveOrder.sender.name}`
+                : `Untuk ${nextActiveOrder.recipient.name} (${nextActiveOrder.recipient.phone})`}
             </Text>
 
             <View style={styles.primaryBtnRow}>
               <View style={{ flex: 1 }}>
                 {nextActiveOrder.status === 'accepted' && (
                   <Button
-                    label="Konfirmasi Dijemput"
+                    label="Paket sudah dijemput"
                     variant="primary"
                     size="md"
                     loading={isPicking}
@@ -418,7 +420,7 @@ export default function AngkutJalanScreen() {
                 )}
                 {(nextActiveOrder.status === 'picked_up' || nextActiveOrder.status === 'in_transit') && (
                   <Button
-                    label="Konfirmasi Tiba di Lokasi"
+                    label="Saya sudah sampai"
                     variant="primary"
                     size="md"
                     loading={isArriving}
@@ -428,7 +430,7 @@ export default function AngkutJalanScreen() {
                 )}
                 {nextActiveOrder.status === 'arrived' && (
                   <Button
-                    label="Masukkan Kode 4 Digit"
+                    label="Masukkan kode penerima"
                     variant="primary"
                     size="md"
                     leftIcon={<ShieldCheck size={16} color="#FFF" />}
@@ -463,17 +465,17 @@ export default function AngkutJalanScreen() {
         {/* BELOW THE FOLD: Full Package Manifest */}
         <View style={styles.manifestHeader}>
           <Text variant="headline" color={colors.text.primary} weight="700">
-            Manifest Paket ({orders.length})
+            Paket di perjalanan ini ({orders.length})
           </Text>
           <Text variant="caption" color={colors.text.secondary}>
-            Ketuk peta di atas untuk melihat panduan belokan
+            Urut sesuai jalur
           </Text>
         </View>
 
         {orders.length === 0 ? (
           <Card variant="flat" padding="lg" style={{ alignItems: 'center' }}>
             <Text variant="callout" color={colors.text.secondary}>
-              Belum ada paket yang diterima pada rute ini.
+              Belum ada paket di perjalanan ini.
             </Text>
           </Card>
         ) : (
@@ -515,7 +517,7 @@ export default function AngkutJalanScreen() {
                 <View style={styles.actionRow}>
                   {o.status === 'accepted' && (
                     <Button
-                      label="Konfirmasi Dijemput"
+                      label="Paket sudah dijemput"
                       variant="primary"
                       size="sm"
                       fullWidth={false}
@@ -526,7 +528,7 @@ export default function AngkutJalanScreen() {
 
                   {(o.status === 'picked_up' || o.status === 'in_transit') && (
                     <Button
-                      label="Konfirmasi Tiba"
+                      label="Sudah sampai"
                       variant="primary"
                       size="sm"
                       fullWidth={false}
@@ -537,7 +539,7 @@ export default function AngkutJalanScreen() {
 
                   {o.status === 'arrived' && (
                     <Button
-                      label="Kode Serah Terima"
+                      label="Masukkan kode"
                       variant="primary"
                       size="sm"
                       fullWidth={false}
@@ -554,7 +556,7 @@ export default function AngkutJalanScreen() {
                     <View style={styles.deliveredRow}>
                       <CheckCircle size={16} color={colors.semantic.success} />
                       <Text variant="captionMedium" color={colors.semantic.success} style={{ marginLeft: 4 }}>
-                        Selesai Diserahkan
+                        Sudah diserahkan
                       </Text>
                     </View>
                   )}
@@ -587,13 +589,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  mapHeroWrap: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.xs,
-  },
+  mapHeroWrap: {},
   mapHero: {
-    borderRadius: radii.xl,
-    ...shadows.card,
+    borderRadius: 0,
+    borderWidth: 0,
   },
   gpsControlStrip: {
     flexDirection: 'row',
@@ -606,6 +605,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
     marginTop: spacing.xs,
+    marginHorizontal: spacing.md,
   },
   gpsLeft: {
     flexDirection: 'row',

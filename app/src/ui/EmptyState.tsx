@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
-import { PackageOpen } from 'lucide-react-native';
+import { EmptyParcelArt } from './Artwork';
 import { colors, spacing } from '../theme/tokens';
 import { Text } from './Text';
 import { Button } from './Button';
@@ -24,8 +24,9 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.iconWrapper}>
-        {icon || <PackageOpen size={48} color={colors.text.muted} />}
+      {/* Same illustration everywhere so empty screens feel like part of the brand. */}
+      <View style={styles.art}>
+        <EmptyParcelArt size={120} />
       </View>
 
       <Text variant="headline" color={colors.text.primary} weight="700" align="center" style={styles.title}>
@@ -53,6 +54,9 @@ export function EmptyState({
 }
 
 const styles = StyleSheet.create({
+  art: {
+    marginBottom: 12,
+  },
   container: {
     alignItems: 'center',
     justifyContent: 'center',

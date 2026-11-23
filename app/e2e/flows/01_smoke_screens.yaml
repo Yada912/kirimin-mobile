@@ -12,29 +12,30 @@ tags: [smoke]
 - runFlow:
     file: ../subflows/login_as.yaml
     env:
-      DEMO_BUTTON: "Masuk: Wayan.*"
-      HOME_TEXT: "Kirim Paket Sekarang"
+      DEMO_BUTTON: "Wayan \\(pengirim\\)"
+      HOME_TEXT: "Mau kirim ke mana\\?"
 - tapOn: "Aktivitas"
-- assertVisible: "Sedang Berjalan"
-- tapOn: "Riwayat Selesai"
+- assertVisible: "Berjalan"
+- tapOn: "Selesai"
 - tapOn: "Notifikasi"
 - tapOn: "Profil"
-- assertVisible: "Ganti ke Angkut.*"
+- assertVisible: "Ganti ke pengemudi"
 - tapOn: "Beranda"
-- tapOn: "Kirim Paket Sekarang"
-- assertVisible: "Detail Paket.*"       # S1 opens
+- tapOn: "Cari tujuan pengiriman"
+- assertVisible: "Kirim paket"          # step 1 (Rute) opens
 - back
 
 # ── Switch role → Angkut (driver) ──────────────────────────────
 - tapOn: "Profil"
-- tapOn: "Ganti ke Angkut.*"
+- tapOn: "Ganti ke pengemudi"
 - extendedWaitUntil:
-    visible: "Publikasikan Rute Baru"
+    visible: "Halo, Made"
     timeout: 10000
 - tapOn: "Rute Saya"
 - tapOn: "Kiriman"
 - tapOn: "Profil"
 - tapOn: "Beranda"
-- tapOn: "Publikasikan Rute Baru"
+- tapOn:
+    id: "buat-rute-cta"
 - assertNotVisible: ".*[Ee]rror.*"      # D1 opens without a red error screen
 - back

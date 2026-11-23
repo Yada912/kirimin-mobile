@@ -3,7 +3,7 @@ import { StyleSheet, View, ScrollView, Image, Pressable, Platform } from 'react-
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, Image as ImageIcon, X } from 'lucide-react-native';
+import { Camera, Image as ImageIcon, X } from '../../src/ui/icons';
 import {
   CATEGORIES,
   Category,
@@ -29,6 +29,7 @@ import {
 } from '../../src/ui';
 import { uploadImage } from '../../src/api/client';
 import { resolveApiUrl } from '../../src/utils/config';
+import { KIRIM_STEPS } from '../../src/features/kirim/draft';
 
 export default function KirimPaketScreen() {
   const router = useRouter();
@@ -78,36 +79,31 @@ export default function KirimPaketScreen() {
   };
 
   const handleNext = () => {
+    // Step 2 → 3: keep everything chosen on the route step and add the package.
     router.push({
-      pathname: '/kirim/rute',
+      pathname: '/kirim/driver',
       params: {
+        ...params,
         category,
         size,
         weightClass,
         handling: JSON.stringify(handling),
         notes,
         photoUrl: photoUrl || '',
-        pickupPreset: params.pickupPreset as string,
-        dropoffPreset: params.dropoffPreset as string,
-        pickupJson: (params.pickupJson as string) || '',
-        dropoffJson: (params.dropoffJson as string) || '',
       },
     });
   };
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Detail Paket" />
-      <StepHeader
-        steps={['Paket', 'Rute', 'Driver', 'Konfirmasi']}
-        currentStep={1}
-      />
+      <TopBar title="Paketnya apa?" />
+      <StepHeader steps={KIRIM_STEPS} currentStep={2} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Kategori Paket */}
         <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Kategori Paket
+          <Text variant="headline" style={styles.sectionTitle}>
+            Isinya
           </Text>
           <ChipGroup<Category>
             items={CATEGORIES.map((cat) => ({ value: cat, label: cat }))}
@@ -118,8 +114,8 @@ export default function KirimPaketScreen() {
 
         {/* Ukuran Paket */}
         <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Ukuran Paket
+          <Text variant="headline" style={styles.sectionTitle}>
+            Ukuran
           </Text>
           <ChipGroup<PackageSize>
             items={PACKAGE_SIZES.map((sz) => ({
@@ -134,8 +130,8 @@ export default function KirimPaketScreen() {
 
         {/* Berat Paket */}
         <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Perkiraan Berat
+          <Text variant="headline" style={styles.sectionTitle}>
+            Berat
           </Text>
           <ChipGroup<WeightClass>
             items={WEIGHT_CLASSES.map((wc) => ({
@@ -149,8 +145,8 @@ export default function KirimPaketScreen() {
 
         {/* Penanganan Khusus */}
         <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Penanganan Khusus (Opsional)
+          <Text variant="headline" style={styles.sectionTitle}>
+            Perlu perhatian khusus?
           </Text>
           <ChipGroup<HandlingFlag>
             items={HANDLING_FLAGS.map((hf) => ({
@@ -165,8 +161,8 @@ export default function KirimPaketScreen() {
 
         {/* Foto Paket */}
         <View style={styles.section}>
-          <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Foto Paket (Opsional)
+          <Text variant="headline" style={styles.sectionTitle}>
+            Foto paket
           </Text>
           {photoUri ? (
             <View style={styles.photoPreviewWrapper}>
@@ -192,10 +188,10 @@ export default function KirimPaketScreen() {
             <Card onPress={handlePickImage} variant="outlined" padding="md" style={styles.uploadCard}>
               <Camera size={24} color={colors.primary} />
               <Text variant="calloutSemibold" color={colors.primary} style={{ marginTop: 4 }}>
-                Ambil atau Pilih Foto Paket
+                Tambah foto
               </Text>
               <Text variant="caption" color={colors.text.muted}>
-                Membantu pengemudi mengenali paket Anda
+                Opsional, membantu pengemudi mengenali paketmu
               </Text>
             </Card>
           )}
@@ -204,8 +200,8 @@ export default function KirimPaketScreen() {
         {/* Catatan untuk Driver */}
         <View style={styles.section}>
           <TextField
-            label="Catatan Tambahan untuk Driver (Opsional)"
-            placeholder="Contoh: Titip di satpam gedung atau hubungi sebelum sampai"
+            label="Catatan untuk pengemudi"
+            placeholder="Opsional, misal: telepon dulu sebelum sampai"
             value={notes}
             onChangeText={setNotes}
             multiline
@@ -217,7 +213,7 @@ export default function KirimPaketScreen() {
       {/* Bottom Pinned Action */}
       <View style={styles.bottomBar}>
         <Button
-          label="Lanjut: Atur Rute"
+          label="Cari pengemudi searah"
           variant="primary"
           size="lg"
           disabled={uploading}

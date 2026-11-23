@@ -7,7 +7,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { colors, radii, spacing, touchTarget, typography } from '../theme/tokens';
+import { colors, radii, spacing, touchTarget, typography, fonts } from '../theme/tokens';
 import { Text } from './Text';
 
 export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
@@ -111,6 +111,7 @@ const styles = StyleSheet.create({
     borderColor: colors.semantic.danger,
   },
   input: {
+    fontFamily: fonts['500'],
     flex: 1,
     ...typography.body,
     color: colors.text.primary,

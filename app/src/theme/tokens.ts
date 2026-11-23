@@ -20,6 +20,19 @@ export const colors = {
   driverLight: '#D1FAE5',
   driverSubtle: '#ECFDF5',
 
+  // Bali palette — the warm accents that sit next to the blue.
+  // laut = deep ocean (hero banners), kunyit = turmeric (highlights),
+  // senja = sunset coral (alerts/promos), sawah = rice-field green (earnings).
+  laut: '#0A2A6B',
+  lautSoft: '#123C8F',
+  kunyit: '#FFC531',
+  kunyitLight: '#FFF4D1',
+  senja: '#FF7A59',
+  senjaLight: '#FFE9E2',
+  sawah: '#0E9F6E',
+  sawahLight: '#DDF6EC',
+  langit: '#D8E7FF',
+
   // Lively Accents (Gojek / Apple Maps inspired warmth)
   accent: {
     indigo: '#4F46E5',
@@ -131,17 +144,23 @@ export const radii = {
 } as const;
 
 export const typography = {
+  display: {
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '800' as const,
+    letterSpacing: -0.6,
+  },
   largeTitle: {
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: '700' as const,
-    letterSpacing: 0.3,
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: '800' as const,
+    letterSpacing: -0.4,
   },
   title: {
     fontSize: 20,
     lineHeight: 26,
     fontWeight: '700' as const,
-    letterSpacing: 0.2,
+    letterSpacing: -0.2,
   },
   headline: {
     fontSize: 17,
@@ -151,7 +170,7 @@ export const typography = {
   },
   body: {
     fontSize: 15,
-    lineHeight: 20,
+    lineHeight: 22,
     fontWeight: '400' as const,
   },
   bodyMedium: {
@@ -171,7 +190,7 @@ export const typography = {
   },
   caption: {
     fontSize: 12,
-    lineHeight: 16,
+    lineHeight: 17,
     fontWeight: '400' as const,
   },
   captionMedium: {
@@ -180,6 +199,23 @@ export const typography = {
     fontWeight: '500' as const,
   },
 } as const;
+
+/** Plus Jakarta Sans — loaded in app/_layout.tsx. One family per weight (Android ignores fontWeight on custom fonts). */
+export const fonts = {
+  '400': 'PlusJakartaSans_400Regular',
+  '500': 'PlusJakartaSans_500Medium',
+  '600': 'PlusJakartaSans_600SemiBold',
+  '700': 'PlusJakartaSans_700Bold',
+  '800': 'PlusJakartaSans_800ExtraBold',
+} as const;
+
+export function fontFor(weight?: string | number | null): string {
+  const w = String(weight ?? '400');
+  if (w === 'bold') return fonts['700'];
+  if (w === 'normal') return fonts['400'];
+  const n = Math.min(800, Math.max(400, Math.round(Number(w) / 100) * 100 || 400));
+  return fonts[String(n) as keyof typeof fonts];
+}
 
 export const touchTarget = {
   minHeight: 44,

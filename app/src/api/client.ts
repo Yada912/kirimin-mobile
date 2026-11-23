@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { FileSystemUploadType } from 'expo-file-system/legacy';
-import { API_BASE_URL, getApiBaseUrl } from '../utils/config';
+import { getApiBaseUrl } from '../utils/config';
 import { getToken, removeToken } from '../auth/storage';
 
 export class ApiError extends Error {
@@ -119,7 +119,7 @@ export const api = {
  */
 export async function uploadImage(uri: string): Promise<string> {
   const token = await getToken();
-  const uploadUrl = `${API_BASE_URL}/uploads`;
+  const uploadUrl = `${await getApiBaseUrl()}/uploads`;
 
   const headers: Record<string, string> = {
     'ngrok-skip-browser-warning': '1',

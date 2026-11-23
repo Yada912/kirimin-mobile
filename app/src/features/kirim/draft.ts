@@ -1,5 +1,5 @@
 /**
- * The Kirim flow (S1 Paket → S2 Rute → S3 Driver → S4 Konfirmasi) passes its
+ * The Kirim flow (Rute → Paket → Driver → Bayar/Konfirmasi) passes its
  * draft between screens as expo-router params, which are always strings
  * (objects are JSON-encoded). This module is the single place that reads that
  * draft back and turns it into API request bodies.
@@ -17,6 +17,9 @@ import type {
   TripMatch,
   WeightClass,
 } from '@kirimin/shared';
+
+/** Step labels of the Kirim wizard, in order. */
+export const KIRIM_STEPS = ['Rute', 'Paket', 'Driver', 'Bayar'];
 
 /** Route params exactly as `useLocalSearchParams()` returns them. */
 export type RouteParams = Record<string, string | string[] | undefined>;

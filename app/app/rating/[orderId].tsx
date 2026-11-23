@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Star } from 'lucide-react-native';
+import { Star } from '../../src/ui/icons';
 import { colors, radii, spacing } from '../../src/theme/tokens';
 import { Text, TopBar, Card, Avatar, Button, ChipGroup, TextField, SkeletonCard, ErrorState } from '../../src/ui';
 import { useOrder, useRateOrder } from '../../src/api/hooks/useApi';
@@ -47,7 +47,7 @@ export default function RatingScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Beri Penilaian" />
+        <TopBar title="Beri nilai" />
         <View style={styles.content}>
           <SkeletonCard />
         </View>
@@ -59,7 +59,7 @@ export default function RatingScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Beri Penilaian" />
+      <TopBar title="Beri nilai" />
 
       <ScrollView contentContainerStyle={styles.content}>
         {rateError && (
@@ -97,7 +97,7 @@ export default function RatingScreen() {
         {/* Quick Tags */}
         <View style={styles.section}>
           <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Apa yang paling Anda sukai?
+            Apa yang paling kamu suka?
           </Text>
           <ChipGroup<string>
             items={RATING_TAGS.map((t) => ({ value: t, label: t }))}
@@ -110,7 +110,7 @@ export default function RatingScreen() {
         {/* Comment Input */}
         <View style={styles.section}>
           <TextField
-            label="Komentar Tambahan"
+            label="Komentar"
             placeholder="Tuliskan ulasan untuk pengemudi..."
             value={comment}
             onChangeText={setComment}
@@ -120,7 +120,7 @@ export default function RatingScreen() {
         </View>
 
         <Button
-          label="Kirim Penilaian"
+          label="Kirim nilai"
           variant="primary"
           size="lg"
           loading={isPending}

@@ -120,4 +120,5 @@ If you already have a **Supabase** project, see the full step-by-step guide in *
 - [`docs/API.md`](docs/API.md) — Complete REST & SSE endpoint reference
 - [`docs/APP.md`](docs/APP.md) — Mobile component system and design tokens
 - [`docs/TESTING.md`](docs/TESTING.md) — Testing strategy across server, contract, and E2E layers
+- [`docs/APK-CONNECT.md`](docs/APK-CONNECT.md) — Build the APK and point it at the backend on your PC (same Wi-Fi or tunnel)
 - [`docs/SETUP-LAPTOP.md`](docs/SETUP-LAPTOP.md) — Running locally with physical phones

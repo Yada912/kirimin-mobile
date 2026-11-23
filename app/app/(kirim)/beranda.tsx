@@ -1,285 +1,174 @@
 import React from 'react';
-import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  Plus,
-  MapPin,
-  ArrowRight,
-  Clock,
-  SlidersHorizontal,
-  Bookmark,
-  Package,
-  Sparkles,
-  Repeat,
-} from 'lucide-react-native';
+import { ORDER_STATUS_LABELS, TRACKING_STEPS } from '@kirimin/shared';
+import type { OrderStatus } from '@kirimin/shared';
+import { MapPin, Search, Repeat, ChevronRight, ShieldCheck, Package } from '../../src/ui/icons';
 import { colors, radii, spacing, shadows } from '../../src/theme/tokens';
-import {
-  Text,
-  Card,
-  StatusPill,
-  SkeletonCard,
-  Avatar,
-  CourierScooterArt,
-  HandoverSparkArt,
-  BrandLogo,
-} from '../../src/ui';
+import { Text, SkeletonCard, Avatar, SearahScene } from '../../src/ui';
 import { useAuth } from '../../src/auth/AuthContext';
-import { useOrders, useSavedPlaces } from '../../src/api/hooks/useApi';
-import { useRoutePresets, getPresetBg } from '../../src/features/presets/useRoutePresets';
+import { useOrders } from '../../src/api/hooks/useApi';
+import { useRoutePresets } from '../../src/features/presets/useRoutePresets';
+
+/** 0..1 progress for the little bar on the active-order card. */
+function progressOf(status: OrderStatus): number {
+  const i = TRACKING_STEPS.indexOf(status);
+  if (i >= 0) return (i + 1) / TRACKING_STEPS.length;
+  return 0.08; // still looking for a driver
+}
 
 export default function KirimBerandaScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { width } = useWindowDimensions();
   const { data: activeOrders, isLoading } = useOrders('sender', 'active');
-  const { data: savedPlaces = [] } = useSavedPlaces();
   const { presets } = useRoutePresets();
 
   const activeOrder = activeOrders && activeOrders.length > 0 ? activeOrders[0] : null;
+  const firstName = (user?.name || 'kamu').split(' ')[0];
 
-  const launchPreset = (preset: (typeof presets)[number]) => {
-    router.push({
-      pathname: '/kirim/paket',
-      params: {
-        pickupPreset: preset.pickup.label,
-        dropoffPreset: preset.dropoff.label,
-        pickupJson: JSON.stringify(preset.pickup),
-        dropoffJson: JSON.stringify(preset.dropoff),
-        categoryPreset: preset.defaultCategory || '',
-        sizePreset: preset.defaultSize || '',
-      },
-    });
+  const startSend = (preset?: (typeof presets)[number]) => {
+    router.push(
+      preset
+        ? {
+            pathname: '/kirim/rute',
+            params: {
+              pickupJson: JSON.stringify(preset.pickup),
+              dropoffJson: JSON.stringify(preset.dropoff),
+              categoryPreset: preset.defaultCategory || '',
+              sizePreset: preset.defaultSize || '',
+            },
+          }
+        : '/kirim/rute',
+    );
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Compact Uber-style Brand + User Header */}
         <View style={styles.header}>
-          <Pressable
-            onPress={() => router.push('/(kirim)/profil')}
-            style={styles.userRow}
-          >
+          <Pressable onPress={() => router.push('/(kirim)/profil')} style={styles.userRow} hitSlop={6}>
             <Avatar name={user?.name || 'Pengirim'} url={user?.avatarUrl} size={40} />
-            <View style={styles.userInfo}>
-              <BrandLogo size="sm" tone="kirim" />
-              <Text variant="captionMedium" color={colors.text.secondary} style={{ marginTop: 1 }}>
-                Halo, {user?.name || 'Pengguna'}
-              </Text>
-            </View>
+            <Text variant="title" color={colors.laut} style={{ marginLeft: spacing.sm }}>
+              Halo, {firstName}
+            </Text>
           </Pressable>
-
-          <Pressable
-            onPress={() => router.push('/(auth)/pilih-peran')}
-            style={styles.roleSwitch}
-          >
-            <Repeat size={13} color={colors.primary} />
-            <Text variant="captionMedium" color={colors.primary} weight="700" style={{ marginLeft: 4 }}>
-              Kirim
+          <Pressable onPress={() => router.push('/(auth)/pilih-peran')} style={styles.roleSwitch} hitSlop={6}>
+            <Repeat size={14} color={colors.primary} />
+            <Text variant="captionMedium" color={colors.primary} weight="700" style={{ marginLeft: 6 }}>
+              Ganti ke pengemudi
             </Text>
           </Pressable>
         </View>
 
-        {/* Active Order Live Banner (if any) */}
+        {/* One job on this screen: start a delivery. */}
+        <View style={styles.hero}>
+          <View style={StyleSheet.absoluteFill}>
+            <SearahScene width={width - spacing.lg * 2} height={210} />
+          </View>
+          <View style={styles.heroInner}>
+            <Text variant="largeTitle" color="#FFFFFF">
+              Mau kirim ke mana?
+            </Text>
+            <Text variant="callout" color={colors.langit} style={{ marginTop: 4 }}>
+              Kami carikan pengendara yang sudah lewat sana.
+            </Text>
+          </View>
+        </View>
+        <Pressable
+          onPress={() => startSend()}
+          style={({ pressed }) => [styles.searchField, pressed && { transform: [{ scale: 0.99 }] }]}
+          testID="kirim-paket-cta"
+          accessibilityRole="button"
+        >
+          <Search size={20} color={colors.primary} />
+          <Text variant="bodyMedium" color={colors.text.secondary} style={{ marginLeft: spacing.sm, flex: 1 }}>
+            Cari tujuan pengiriman
+          </Text>
+          <View style={styles.searchGo}>
+            <ChevronRight size={18} color="#FFFFFF" />
+          </View>
+        </Pressable>
+
         {isLoading ? (
           <SkeletonCard />
         ) : activeOrder ? (
           <Pressable
-            onPress={() =>
-              router.push({ pathname: '/kirim/lacak/[id]', params: { id: activeOrder.id } })
-            }
-            style={styles.activeStrip}
+            onPress={() => router.push({ pathname: '/kirim/lacak/[id]', params: { id: activeOrder.id } })}
+            style={({ pressed }) => [styles.activeCard, pressed && { opacity: 0.92 }]}
+            testID="active-order-card"
           >
-            <View style={{ flex: 1, marginRight: spacing.sm }}>
-              <View style={styles.activeTopRow}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={styles.activePulseDot} />
-                  <Text variant="captionMedium" color={colors.primaryDeep} weight="700">
-                    {activeOrder.code}
-                  </Text>
-                </View>
-                <StatusPill status={activeOrder.status} />
+            <View style={styles.activeTop}>
+              <View style={styles.activeIcon}>
+                <Package size={22} color={colors.primary} />
               </View>
-              <Text variant="calloutSemibold" color={colors.text.primary} numberOfLines={1} style={{ marginTop: 4 }}>
-                {activeOrder.pickup.label} → {activeOrder.dropoff.label}
-              </Text>
-            </View>
-            <View style={styles.trackChip}>
-              <Text variant="captionMedium" color="#FFFFFF" weight="700">
+              <View style={{ flex: 1, marginLeft: spacing.md }}>
+                <Text variant="headline" numberOfLines={1}>
+                  {activeOrder.pickup.label} ke {activeOrder.dropoff.label}
+                </Text>
+                <Text variant="caption" color={colors.text.secondary} style={{ marginTop: 2 }}>
+                  {ORDER_STATUS_LABELS[activeOrder.status]}
+                </Text>
+              </View>
+              <Text variant="calloutSemibold" color={colors.primary}>
                 Lacak
               </Text>
-              <ArrowRight size={13} color="#FFFFFF" style={{ marginLeft: 3 }} />
+            </View>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${Math.round(progressOf(activeOrder.status) * 100)}%` }]} />
             </View>
           </Pressable>
         ) : null}
 
-        {/* LARGE VIBRANT HERO BANNER (Playful Art + Main CTA above the fold!) */}
-        <View style={styles.heroBanner}>
-          <View style={styles.heroBannerTop}>
-            <View style={styles.heroCopy}>
-              <View style={styles.heroPill}>
-                <Sparkles size={11} color="#FEF08A" />
-                <Text variant="caption" color="#FEF08A" weight="700" style={{ marginLeft: 4, fontSize: 10 }}>
-                  HEMAT & SEARAH BALI
+        {presets.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <Text variant="headline">Kirim lagi</Text>
+              <Pressable onPress={() => router.push('/kelola/preset')} hitSlop={8}>
+                <Text variant="calloutSemibold" color={colors.primary}>
+                  Atur
                 </Text>
-              </View>
-              <Text variant="title" color="#FFFFFF" weight="700" style={styles.heroHeading}>
-                Titip Kirim Paket Cepat
-              </Text>
-              <Text variant="caption" color="#DBEAFE" style={styles.heroSub}>
-                Temukan pengendara yang lewat rute tujuanmu sekarang.
-              </Text>
+              </Pressable>
             </View>
-            <View style={styles.heroArtWrap}>
-              <CourierScooterArt width={116} height={94} />
-            </View>
-          </View>
-
-          <Pressable
-            onPress={() => router.push('/kirim/paket')}
-            style={({ pressed }) => [styles.heroPrimaryBtn, pressed && { opacity: 0.9 }]}
-            testID="kirim-paket-cta"
-          >
-            <Plus size={18} color={colors.primaryDeep} />
-            <Text variant="headline" color={colors.primaryDeep} weight="700" style={{ marginLeft: 6 }}>
-              Kirim Paket Sekarang
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* ABOVE-THE-FOLD QUICK ACTIONS (Within thumb's reach — zero scrolling!) */}
-        <View style={styles.quickGrid}>
-          <Pressable
-            onPress={() => router.push('/kelola/preset')}
-            style={[styles.quickTile, { backgroundColor: colors.accent.amberLight, borderColor: '#FDE68A' }]}
-          >
-            <View style={[styles.quickIconCircle, { backgroundColor: colors.accent.coral }]}>
-              <SlidersHorizontal size={16} color="#FFFFFF" />
-            </View>
-            <Text variant="captionMedium" color={colors.text.primary} weight="700">
-              Atur Preset
-            </Text>
-            <Text variant="caption" color={colors.text.secondary} style={{ fontSize: 10 }}>
-              {presets.length} rute cepat
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => router.push('/kelola/lokasi')}
-            style={[styles.quickTile, { backgroundColor: colors.accent.violetLight, borderColor: '#DDD6FE' }]}
-          >
-            <View style={[styles.quickIconCircle, { backgroundColor: colors.accent.violet }]}>
-              <Bookmark size={16} color="#FFFFFF" />
-            </View>
-            <Text variant="captionMedium" color={colors.text.primary} weight="700">
-              Lokasi Saya
-            </Text>
-            <Text variant="caption" color={colors.text.secondary} style={{ fontSize: 10 }}>
-              {savedPlaces.length} tersimpan
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => router.push('/(kirim)/aktivitas')}
-            style={[styles.quickTile, { backgroundColor: colors.driverSubtle, borderColor: colors.driverLight }]}
-          >
-            <View style={[styles.quickIconCircle, { backgroundColor: colors.driver }]}>
-              <Package size={16} color="#FFFFFF" />
-            </View>
-            <Text variant="captionMedium" color={colors.text.primary} weight="700">
-              Riwayat
-            </Text>
-            <Text variant="caption" color={colors.text.secondary} style={{ fontSize: 10 }}>
-              Pantau paket
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* CUSTOMIZABLE ROUTE PRESETS (Above-the-fold quick launch + Edit button) */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <View>
-              <Text variant="headline" color={colors.text.primary} weight="700">
-                Rute Cepat Saya
-              </Text>
-              <Text variant="caption" color={colors.text.secondary}>
-                Ketuk untuk kirim instan atau ubah sesuai rutinitasmu
-              </Text>
-            </View>
-            <Pressable
-              onPress={() => router.push('/kelola/preset')}
-              style={styles.editPresetPill}
-            >
-              <Text variant="captionMedium" color={colors.primary} weight="700">
-                Edit / +
-              </Text>
-            </Pressable>
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.presetCarousel}
-          >
-            {presets.map((preset) => {
-              const accent = preset.color || colors.primary;
-              const tintBg = getPresetBg(accent);
-              return (
+            <View style={styles.list}>
+              {presets.slice(0, 3).map((preset, i) => (
                 <Pressable
                   key={preset.id}
-                  onPress={() => launchPreset(preset)}
-                  style={[styles.presetCard, { borderTopColor: accent }]}
+                  onPress={() => startSend(preset)}
+                  style={({ pressed }) => [styles.listRow, i > 0 && styles.listDivider, pressed && { backgroundColor: colors.surfaceSecondary }]}
                 >
-                  <View style={styles.presetTop}>
-                    <View style={[styles.presetBadge, { backgroundColor: tintBg }]}>
-                      <MapPin size={14} color={accent} />
-                    </View>
-                    {preset.defaultSize ? (
-                      <View style={[styles.sizeTag, { backgroundColor: tintBg }]}>
-                        <Text variant="caption" color={accent} weight="700" style={{ fontSize: 10 }}>
-                          {preset.defaultCategory || 'Paket'} • {preset.defaultSize}
-                        </Text>
-                      </View>
-                    ) : null}
+                  <View style={[styles.pinTile, { backgroundColor: (preset.color || colors.primary) + '1F' }]}>
+                    <MapPin size={20} color={preset.color || colors.primary} />
                   </View>
-                  <Text variant="calloutSemibold" color={colors.text.primary} numberOfLines={1} style={{ marginTop: 8 }}>
-                    {preset.name}
-                  </Text>
-                  <Text variant="caption" color={colors.text.secondary} numberOfLines={1} style={{ marginTop: 2 }}>
-                    {preset.subtitle || `${preset.pickup.label} → ${preset.dropoff.label}`}
-                  </Text>
+                  <View style={{ flex: 1, marginLeft: spacing.md }}>
+                    <Text variant="calloutSemibold" numberOfLines={1}>
+                      {preset.dropoff.label}
+                    </Text>
+                    <Text variant="caption" color={colors.text.secondary} numberOfLines={1}>
+                      dari {preset.pickup.label}
+                    </Text>
+                  </View>
+                  <ChevronRight size={16} color={colors.text.muted} />
                 </Pressable>
-              );
-            })}
-
-            <Pressable
-              onPress={() => router.push('/kelola/preset')}
-              style={styles.addPresetCard}
-            >
-              <View style={styles.addPresetCircle}>
-                <Plus size={20} color={colors.primary} />
-              </View>
-              <Text variant="captionMedium" color={colors.primary} weight="700" align="center" style={{ marginTop: 6 }}>
-                Buat Preset{'\n'}Baru
-              </Text>
-            </Pressable>
-          </ScrollView>
-        </View>
-
-        {/* BELOW THE FOLD: Playful Safety Banner & Tips */}
-        <Card variant="flat" padding="md" style={styles.safetyBanner}>
-          <View style={styles.safetyRow}>
-            <HandoverSparkArt width={62} height={62} />
-            <View style={{ flex: 1, marginLeft: spacing.md }}>
-              <Text variant="headline" color={colors.driverDeep} weight="700">
-                Aman dengan Kode 4 Digit
-              </Text>
-              <Text variant="caption" color={colors.text.secondary} style={{ marginTop: 2, lineHeight: 18 }}>
-                Paket hanya selesai diserahkan setelah pengemudi memasukkan kode rahasia dari penerima di tujuan.
-              </Text>
+              ))}
             </View>
           </View>
-        </Card>
+        )}
+
+        <View style={styles.safetyBanner}>
+          <View style={styles.safetyIcon}>
+            <ShieldCheck size={28} color={colors.laut} />
+          </View>
+          <View style={{ flex: 1, marginLeft: spacing.md }}>
+            <Text variant="headline" color={colors.laut}>
+              Paket hanya pindah tangan dengan kode
+            </Text>
+            <Text variant="caption" color={colors.text.secondary} style={{ marginTop: 2 }}>
+              Penerima menyebutkan 4 digit ke pengemudi saat paket diserahkan.
+            </Text>
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -291,214 +180,136 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.md,
-    paddingBottom: 28,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xxxl,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  userInfo: {
-    marginLeft: spacing.sm,
-  },
   roleSwitch: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: radii.full,
     backgroundColor: colors.primaryLight,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
   },
-  activeStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.primarySubtle,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
-    borderRadius: radii.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    ...shadows.card,
-  },
-  activeStripLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: spacing.sm,
-  },
-  activePulseDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary,
-    marginRight: spacing.sm,
-  },
-  activeTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-    gap: 6,
-  },
-  trackChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: radii.full,
-  },
-  heroBanner: {
-    backgroundColor: colors.primary,
+  hero: {
+    height: 210,
     borderRadius: radii.xl,
+    overflow: 'hidden',
+    backgroundColor: colors.laut,
     padding: spacing.lg,
-    marginBottom: spacing.md,
+  },
+  heroInner: {
+    maxWidth: 260,
+  },
+  searchField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: radii.lg,
+    paddingLeft: spacing.lg,
+    paddingRight: 6,
+    height: 58,
+    marginTop: -29,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.lg,
     ...shadows.float,
   },
-  heroBannerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  heroCopy: {
-    flex: 1,
-    paddingRight: spacing.xs,
-  },
-  heroPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    borderRadius: radii.full,
-    marginBottom: 6,
-  },
-  heroHeading: {
-    fontSize: 21,
-    lineHeight: 26,
-  },
-  heroSub: {
-    marginTop: 4,
-    lineHeight: 17,
-  },
-  heroArtWrap: {
-    marginLeft: 4,
-  },
-  heroPrimaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    height: 48,
+  searchGo: {
+    width: 44,
+    height: 44,
     borderRadius: radii.md,
-    ...shadows.card,
-  },
-  quickGrid: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  quickTile: {
-    flex: 1,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    paddingVertical: 11,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-  },
-  quickIconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+  },
+  activeCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1.5,
+    borderColor: colors.langit,
+  },
+  activeTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  activeIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.surfaceMuted,
+    marginTop: spacing.md,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
   },
   section: {
     marginBottom: spacing.lg,
   },
-  sectionHeaderRow: {
+  sectionHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
   },
-  editPresetPill: {
-    paddingHorizontal: 11,
-    paddingVertical: 5,
-    borderRadius: radii.full,
-    backgroundColor: colors.primaryLight,
-  },
-  presetCarousel: {
-    gap: spacing.sm,
-    paddingRight: spacing.sm,
-  },
-  presetCard: {
-    width: 210,
+  list: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    borderTopWidth: 4,
-    ...shadows.card,
+    overflow: 'hidden',
   },
-  presetTop: {
+  listRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: 64,
   },
-  presetBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+  listDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
-  sizeTag: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: radii.full,
-  },
-  addPresetCard: {
-    width: 104,
-    backgroundColor: colors.primarySubtle,
-    borderRadius: radii.lg,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: '#93C5FD',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.sm,
-  },
-  addPresetCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+  pinTile: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   safetyBanner: {
-    backgroundColor: colors.driverSubtle,
-    borderWidth: 1,
-    borderColor: colors.driverLight,
-  },
-  safetyRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.kunyitLight,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+  },
+  safetyIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.kunyit,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

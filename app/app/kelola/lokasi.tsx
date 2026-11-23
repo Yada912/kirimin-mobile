@@ -11,7 +11,7 @@ import {
   Bookmark,
   Crosshair,
   Sparkles,
-} from 'lucide-react-native';
+} from '../../src/ui/icons';
 import type { SavedPlace, SavedPlaceKind } from '@kirimin/shared';
 import { SAVED_PLACE_KINDS, SAVED_PLACE_LABELS } from '@kirimin/shared';
 import { colors, radii, spacing, shadows } from '../../src/theme/tokens';
@@ -126,7 +126,7 @@ export default function KelolaLokasiScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar
-        title="Lokasi Tersimpan"
+        title="Alamat tersimpan"
         subtitle="Tampil otomatis di semua pemilih alamat"
         rightAction={
           !showForm ? (
@@ -158,7 +158,7 @@ export default function KelolaLokasiScreen() {
               {editingId ? 'Edit Lokasi Tersimpan' : 'Tambah Lokasi Kustom'}
             </Text>
             <Text variant="caption" color={colors.text.secondary} style={{ marginBottom: spacing.md }}>
-              Ketuk titik mana saja di peta Bali untuk meletakkan pin koordinat dengan akurat.
+              Ketuk peta untuk menaruh pin di tempat yang pas.
             </Text>
 
             {error ? (
@@ -216,7 +216,7 @@ export default function KelolaLokasiScreen() {
             </View>
 
             <TextField
-              label="Nama Lokasi"
+              label="Nama tempat"
               placeholder="Contoh: Kos Tukad Badung, Lab FT Unud"
               value={label}
               onChangeText={(t) => {
@@ -226,7 +226,7 @@ export default function KelolaLokasiScreen() {
             />
 
             <TextField
-              label="Patokan / Alamat Detail (Opsional)"
+              label="Patokan (opsional)"
               placeholder="Contoh: Gang 2 pagar hitam depan warung"
               value={address}
               onChangeText={setAddress}
@@ -255,7 +255,7 @@ export default function KelolaLokasiScreen() {
             <View style={styles.heroBanner}>
               <View style={{ flex: 1 }}>
                 <Text variant="headline" color="#FFFFFF" weight="700">
-                  Alamat Favorit Anda
+                  Alamat favoritmu
                 </Text>
                 <Text variant="caption" color="#EDE9FE" style={{ marginTop: 2 }}>
                   Simpan rumah, kos, kampus, atau kantor untuk pemilihan rute lebih cepat.
@@ -273,7 +273,7 @@ export default function KelolaLokasiScreen() {
               <SkeletonCard />
             ) : places.length === 0 ? (
               <EmptyState
-                title="Belum Ada Lokasi Tersimpan"
+                title="Belum ada alamat tersimpan"
                 description="Tambahkan rumah, kampus, atau titik langganan agar langsung muncul saat pilih lokasi jemput & antar."
                 actionLabel="Tambah Lokasi Pertama"
                 onAction={openCreate}

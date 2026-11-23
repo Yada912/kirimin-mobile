@@ -9,7 +9,7 @@ import {
   Bell,
   ShieldCheck,
   Sparkles,
-} from 'lucide-react-native';
+} from '../../src/ui/icons';
 import type { NotificationChannel, VehicleType } from '@kirimin/shared';
 import { NOTIFICATION_CHANNELS, NOTIFICATION_CHANNEL_LABELS } from '@kirimin/shared';
 import { colors, radii, spacing } from '../../src/theme/tokens';
@@ -93,7 +93,7 @@ export default function KelolaProfilScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Pengaturan & Edit Profil" subtitle="Sesuaikan akun, kendaraan & notifikasi" />
+      <TopBar title="Ubah profil" subtitle="Akun, kendaraan, dan notifikasi" />
 
       <ScrollView contentContainerStyle={styles.content}>
         {banner ? (
@@ -119,13 +119,13 @@ export default function KelolaProfilScreen() {
             Data Akun
           </Text>
           <TextField
-            label="Nama Lengkap"
+            label="Nama lengkap"
             value={name}
             onChangeText={setName}
             leftElement={<User size={17} color={colors.text.muted} />}
           />
           <TextField
-            label="Email (Opsional)"
+            label="Email (opsional)"
             placeholder="nama@email.com"
             value={email}
             onChangeText={setEmail}
@@ -141,7 +141,7 @@ export default function KelolaProfilScreen() {
             Kendaraan Pengemudi
           </Text>
           <Text variant="caption" color={colors.text.secondary} style={{ marginBottom: spacing.md }}>
-            Digunakan saat kamu beralih ke mode Angkut (Driver).
+            Dipakai saat kamu jadi pengemudi.
           </Text>
 
           <View style={styles.vehicleRow}>
@@ -181,7 +181,7 @@ export default function KelolaProfilScreen() {
           </View>
 
           <TextField
-            label="Nomor Plat Kendaraan"
+            label="Plat nomor"
             placeholder="Contoh: DK 1101 XL"
             value={plate}
             onChangeText={setPlate}
@@ -190,7 +190,7 @@ export default function KelolaProfilScreen() {
           />
 
           <Button
-            label="Simpan Profil & Kendaraan"
+            label="Simpan"
             variant="primary"
             size="lg"
             loading={savingProfile}
@@ -218,7 +218,7 @@ export default function KelolaProfilScreen() {
           </View>
           {!user?.verified ? (
             <Button
-              label="Verifikasi KTP Sekarang"
+              label="Verifikasi sekarang"
               variant="outline"
               size="md"
               loading={verifying}

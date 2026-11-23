@@ -6,7 +6,7 @@ import {
   ViewStyle,
   Pressable,
 } from 'react-native';
-import { colors, radii, spacing, typography } from '../theme/tokens';
+import { colors, radii, spacing, typography, fonts } from '../theme/tokens';
 import { Text } from './Text';
 
 export interface CodeInputProps {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, ScrollView, RefreshControl } from 'react-native';
+import { StyleSheet, View, ScrollView, RefreshControl, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -9,7 +9,7 @@ import {
   Star,
   CreditCard,
   Radio,
-} from 'lucide-react-native';
+} from '../../../src/ui/icons';
 import { colors, radii, spacing, shadows } from '../../../src/theme/tokens';
 import {
   Text,
@@ -28,12 +28,14 @@ import {
 } from '../../../src/ui';
 import { useOrder, useTrip } from '../../../src/api/hooks/useApi';
 import { formatDateTime } from '../../../src/utils/format';
+import { ORDER_STATUS_LABELS } from '@kirimin/shared';
 
 export default function LacakPesananScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { data: order, isLoading, isError, error, refetch, isRefetching } = useOrder(id);
+  const { height: screenH } = useWindowDimensions();
   const { data: trip } = useTrip(order?.tripId || undefined);
 
   if (isLoading) {
@@ -61,6 +63,7 @@ export default function LacakPesananScreen() {
   }
 
   const isCompleted = order.status === 'delivered';
+  const mapHeight = Math.round(Math.max(300, Math.min(480, screenH * 0.5)));
   const isCancelled = order.status === 'cancelled' || order.status === 'declined' || order.status === 'expired';
   const canCancel = ['open', 'requested', 'accepted'].includes(order.status);
 
@@ -72,8 +75,7 @@ export default function LacakPesananScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar
-        title={`Lacak ${order.code}`}
-        subtitle={driverGps ? 'Posisi driver aktif' : 'Pembaruan realtime'}
+        title={`Pesanan ${order.code}`}
         rightAction={
           order.driver ? (
             <Button
@@ -109,7 +111,7 @@ export default function LacakPesananScreen() {
             dropoff={order.dropoff}
             stops={trip?.stops || []}
             driverLocation={driverGps}
-            height={250}
+            height={mapHeight}
             showSettings
             navigationMode={!!driverGps && !isCompleted && !isCancelled}
             allowExpand
@@ -119,7 +121,7 @@ export default function LacakPesananScreen() {
             <View style={styles.liveTrackPill}>
               <Radio size={13} color={colors.driver} />
               <Text variant="captionMedium" color={colors.driverDeep} weight="700" style={{ marginLeft: 5 }}>
-                Driver sedang menuju titik antar di rute jalan aktif
+                Pengemudi sedang di jalan
               </Text>
             </View>
           ) : null}
@@ -129,14 +131,13 @@ export default function LacakPesananScreen() {
         <Card variant="elevated" padding="md" style={styles.statusCard}>
           <View style={styles.statusHeader}>
             <View style={{ flex: 1, marginRight: spacing.sm }}>
-              <Text variant="headline" color={colors.text.primary} weight="700">
-                Status Pengiriman
+              <Text variant="title" color={colors.laut}>
+                {ORDER_STATUS_LABELS[order.status]}
               </Text>
-              <Text variant="caption" color={colors.text.muted} numberOfLines={1}>
-                {order.pickup.label} → {order.dropoff.label}
+              <Text variant="callout" color={colors.text.secondary} numberOfLines={1}>
+                {order.pickup.label} ke {order.dropoff.label}
               </Text>
             </View>
-            <StatusPill status={order.status} />
           </View>
 
           <ProgressSteps currentStatus={order.status} style={{ marginVertical: spacing.xs }} />
@@ -145,7 +146,7 @@ export default function LacakPesananScreen() {
           <View style={styles.quickBtnRow}>
             {isCompleted ? (
               <Button
-                label="Beri Rating Driver"
+                label="Beri nilai pengemudi"
                 variant="primary"
                 size="md"
                 leftIcon={<Star size={16} color="#FFF" />}
@@ -156,7 +157,7 @@ export default function LacakPesananScreen() {
               <>
                 {order.driver ? (
                   <Button
-                    label="Chat Driver"
+                    label="Chat pengemudi"
                     variant="primary"
                     size="md"
                     leftIcon={<MessageSquare size={16} color="#FFF" />}
@@ -166,7 +167,7 @@ export default function LacakPesananScreen() {
                 ) : null}
                 {order.payment?.status === 'unpaid' && !isCancelled ? (
                   <Button
-                    label="Bayar Sekarang"
+                    label="Bayar"
                     variant="outline"
                     size="md"
                     leftIcon={<CreditCard size={15} color={colors.primary} />}
@@ -184,8 +185,8 @@ export default function LacakPesananScreen() {
           <CodeDisplay
             code={order.handoverCode}
             testID="handover-code-display"
-            label="Kode Serah Terima (4 Digit)"
-            hint="Berikan kode ini ke penerima paket. Driver akan memasukkan kode ini saat serah terima di tujuan."
+            label="Kode serah terima"
+            hint="Bagikan ke penerima. Pengemudi meminta kode ini saat menyerahkan paket."
             style={styles.codeCard}
           />
         )}
@@ -205,8 +206,7 @@ export default function LacakPesananScreen() {
                   )}
                 </View>
                 <Text variant="caption" color={colors.text.secondary}>
-                  {order.driver.vehicle?.plate || 'Motor'} ({order.driver.vehicle?.type || 'motor'}) •{' '}
-                  {order.driver.ratingAvg?.toFixed(1) || '5.0'} ★ ({order.driver.deliveriesCount}x antar)
+                  ★ {order.driver.ratingAvg?.toFixed(1) || '5.0'}  ({order.driver.deliveriesCount}x antar)  {order.driver.vehicle?.plate || ''}
                 </Text>
               </View>
             </View>
@@ -214,10 +214,10 @@ export default function LacakPesananScreen() {
         ) : (
           <Card variant="flat" padding="md" style={styles.waitingDriverCard}>
             <Text variant="headline" color={colors.text.primary} weight="600">
-              Menunggu Konfirmasi Driver
+              Belum ada pengemudi
             </Text>
             <Text variant="caption" color={colors.text.secondary} style={{ marginTop: 2 }}>
-              Permintaan telah diteruskan ke pengemudi searah. Anda akan diberitahu begitu pengemudi menerima.
+              Kami kabari begitu ada pengemudi yang menerima paketmu.
             </Text>
           </Card>
         )}
@@ -225,13 +225,13 @@ export default function LacakPesananScreen() {
         {/* Rute & Penerima */}
         <Card variant="outlined" padding="md" style={styles.sectionCard}>
           <Text variant="headline" color={colors.text.primary} weight="700" style={{ marginBottom: spacing.sm }}>
-            Rincian Alamat & Penerima
+            Alamat
           </Text>
           <View style={styles.addressRow}>
             <MapPin size={18} color={colors.primary} />
             <View style={{ flex: 1, marginLeft: spacing.sm }}>
               <Text variant="caption" color={colors.text.muted}>
-                Penjemputan
+                Jemput di
               </Text>
               <Text variant="calloutSemibold" color={colors.text.primary}>
                 {order.pickup.label}
@@ -240,10 +240,10 @@ export default function LacakPesananScreen() {
           </View>
           <Divider style={{ marginVertical: spacing.sm }} />
           <View style={styles.addressRow}>
-            <MapPin size={18} color={colors.driver} />
+            <MapPin size={18} color={colors.senja} />
             <View style={{ flex: 1, marginLeft: spacing.sm }}>
               <Text variant="caption" color={colors.text.muted}>
-                Tujuan (Penerima: {order.recipient.name} - {order.recipient.phone})
+                Antar ke {order.recipient.name} ({order.recipient.phone})
               </Text>
               <Text variant="calloutSemibold" color={colors.text.primary}>
                 {order.dropoff.label}
@@ -263,7 +263,7 @@ export default function LacakPesananScreen() {
         {order.timeline && order.timeline.length > 0 && (
           <Card variant="flat" padding="md" style={styles.sectionCard}>
             <Text variant="headline" color={colors.text.primary} weight="700" style={{ marginBottom: spacing.sm }}>
-              Riwayat Aktivitas
+              Riwayat
             </Text>
             {order.timeline.map((log, index) => (
               <View key={index} style={styles.timelineItem}>
@@ -283,7 +283,7 @@ export default function LacakPesananScreen() {
 
         {canCancel ? (
           <Button
-            label="Batalkan Pesanan"
+            label="Batalkan pesanan"
             variant="ghost"
             size="md"
             onPress={() => router.push({ pathname: '/kirim/batal/[id]', params: { id: order.id } })}
@@ -305,11 +305,12 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   mapSection: {
-    marginBottom: spacing.md,
+    marginHorizontal: -spacing.md,
+    marginTop: -spacing.md,
   },
   mapHero: {
-    borderRadius: radii.xl,
-    ...shadows.card,
+    borderRadius: 0,
+    borderWidth: 0,
   },
   liveTrackPill: {
     flexDirection: 'row',
@@ -325,6 +326,9 @@ const styles = StyleSheet.create({
   statusCard: {
     backgroundColor: colors.surface,
     marginBottom: spacing.md,
+    marginTop: -28,
+    borderRadius: radii.xl,
+    ...shadows.float,
   },
   statusHeader: {
     flexDirection: 'row',

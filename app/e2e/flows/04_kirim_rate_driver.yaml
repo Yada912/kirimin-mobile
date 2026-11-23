@@ -6,26 +6,26 @@ tags: [mvp]
 - runFlow:
     file: ../subflows/login_as.yaml
     env:
-      DEMO_BUTTON: "Masuk: Wayan.*"
-      HOME_TEXT: "Kirim Paket Sekarang"
+      DEMO_BUTTON: "Wayan \\(pengirim\\)"
+      HOME_TEXT: "Mau kirim ke mana\\?"
 - tapOn: "Aktivitas"
-- tapOn: "Riwayat Selesai"
+- tapOn: "Selesai"
 - extendedWaitUntil:
     visible: "Selesai"
     timeout: 10000
 - tapOn:
     text: "Selesai"
-    index: 0                  # newest delivered order
+    index: 1                  # index 0 is the "Selesai" tab; 1 = newest delivered order
 - extendedWaitUntil:
-    visible: "Lacak Pesanan"
+    visible: "Pesanan KRM-.*"
     timeout: 10000
 - assertNotVisible:           # code is hidden once delivered
     id: "handover-code-display"
 - scrollUntilVisible:
-    element: "Beri Rating Driver.*"
-- tapOn: "Beri Rating Driver.*"
-- assertVisible: "Beri Penilaian.*"
-- tapOn: "Kirim Penilaian"
+    element: "Beri nilai pengemudi"
+- tapOn: "Beri nilai pengemudi"
+- assertVisible: "Beri nilai"
+- tapOn: "Kirim nilai"
 - extendedWaitUntil:
-    visible: "Sedang Berjalan"   # back on Aktivitas
+    visible: "Berjalan"   # back on Aktivitas
     timeout: 10000

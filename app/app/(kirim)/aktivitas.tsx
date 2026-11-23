@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, FlatList, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Package, ArrowRight } from 'lucide-react-native';
+import { Package, ArrowRight } from '../../src/ui/icons';
 import { colors, spacing } from '../../src/theme/tokens';
 import {
   Text,
@@ -32,13 +32,13 @@ export default function KirimAktivitasScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Aktivitas Kiriman" canGoBack={false} />
+      <TopBar title="Kirimanku" canGoBack={false} />
 
       <View style={styles.filterBar}>
         <SegmentedControl<'active' | 'history'>
           options={[
-            { value: 'active', label: 'Sedang Berjalan' },
-            { value: 'history', label: 'Riwayat Selesai' },
+            { value: 'active', label: 'Berjalan' },
+            { value: 'history', label: 'Selesai' },
           ]}
           value={tab}
           onChange={setTab}
@@ -58,7 +58,7 @@ export default function KirimAktivitasScreen() {
         />
       ) : !orders || orders.length === 0 ? (
         <EmptyState
-          title={tab === 'active' ? 'Tidak Ada Kiriman Berjalan' : 'Belum Ada Riwayat'}
+          title={tab === 'active' ? 'Belum ada kiriman berjalan' : 'Belum ada riwayat'}
           description={
             tab === 'active'
               ? 'Anda belum memiliki paket yang sedang dikirim saat ini.'

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Clock, CheckCircle } from 'lucide-react-native';
+import { Clock, CheckCircle } from '../../../src/ui/icons';
 import { colors, radii, spacing } from '../../../src/theme/tokens';
 import { Text, TopBar, Card, Button, StatusPill, SkeletonCard, ErrorState } from '../../../src/ui';
 import { useOrder } from '../../../src/api/hooks/useApi';
@@ -23,7 +23,7 @@ export default function KirimMenungguScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Permintaan Terbuka" />
+        <TopBar title="Menunggu pengemudi" />
         <View style={styles.content}>
           <SkeletonCard />
         </View>
@@ -34,7 +34,7 @@ export default function KirimMenungguScreen() {
   if (isError || !order) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Permintaan Terbuka" />
+        <TopBar title="Menunggu pengemudi" />
         <ErrorState message={(error as any)?.message || 'Pesanan tidak ditemukan'} onRetry={() => refetch()} />
       </SafeAreaView>
     );
@@ -42,7 +42,7 @@ export default function KirimMenungguScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Menunggu Pengemudi" />
+      <TopBar title="Menunggu pengemudi" />
 
       <View style={styles.content}>
         <Card variant="elevated" padding="xl" style={styles.card}>
@@ -51,7 +51,7 @@ export default function KirimMenungguScreen() {
           </View>
 
           <Text variant="title" color={colors.text.primary} weight="700" align="center" style={styles.title}>
-            Mencari Pengemudi Searah
+            Mencari pengemudi yang searah
           </Text>
 
           <StatusPill status={order.status} style={{ alignSelf: 'center', marginBottom: spacing.md }} />
@@ -75,21 +75,21 @@ export default function KirimMenungguScreen() {
           <View style={styles.indicatorRow}>
             <ActivityIndicator size="small" color={colors.primary} />
             <Text variant="caption" color={colors.primary} style={{ marginLeft: 8 }}>
-              Menunggu respon driver...
+              Biasanya kurang dari 10 menit
             </Text>
           </View>
         </Card>
 
         <View style={styles.actionRow}>
           <Button
-            label="Buka Lacak Pesanan"
+            label="Lihat pesanan"
             variant="secondary"
             size="lg"
             onPress={() => router.push({ pathname: '/kirim/lacak/[id]', params: { id: order.id } })}
             style={{ marginBottom: spacing.sm }}
           />
           <Button
-            label="Batalkan Permintaan"
+            label="Batalkan"
             variant="ghost"
             size="md"
             onPress={() => router.push({ pathname: '/kirim/batal/[id]', params: { id: order.id } })}

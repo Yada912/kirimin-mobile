@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, RefreshControl } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bike, ShieldCheck, Clock, Users, ArrowRight } from 'lucide-react-native';
+import { Bike, ShieldCheck, Clock, Users, ArrowRight } from '../../src/ui/icons';
 import type { TripMatch } from '@kirimin/shared';
 import { colors, radii, spacing } from '../../src/theme/tokens';
 import {
@@ -18,8 +18,8 @@ import {
   ErrorState,
 } from '../../src/ui';
 import { api } from '../../src/api/client';
-import { formatRupiah, formatTime, formatDetour, formatSimilarity } from '../../src/utils/format';
-import { readKirimDraft, searchPayload } from '../../src/features/kirim/draft';
+import { formatRupiah, formatTime, formatDetour } from '../../src/utils/format';
+import { KIRIM_STEPS, readKirimDraft, searchPayload } from '../../src/features/kirim/draft';
 
 export default function KirimDriverScreen() {
   const router = useRouter();
@@ -93,7 +93,7 @@ export default function KirimDriverScreen() {
               )}
             </View>
             <Text variant="caption" color={colors.text.secondary}>
-              {match.trip.vehicle.plate} • Rating {match.trip.driver.ratingAvg?.toFixed(1) || '5.0'} ★ ({match.trip.driver.deliveriesCount} antar)
+              ★ {match.trip.driver.ratingAvg?.toFixed(1) || '5.0'}  ({match.trip.driver.deliveriesCount}x antar)  {match.trip.vehicle.plate}
             </Text>
           </View>
         </View>
@@ -108,7 +108,7 @@ export default function KirimDriverScreen() {
             variant="captionMedium"
             color={isDirect ? colors.primary : colors.semantic.warning}
           >
-            {isDirect ? `${formatSimilarity(match.similarity)} searah` : formatDetour(match.detourKm, match.detourMinutes)}
+            {isDirect ? 'Searah' : `Belok ${formatDetour(match.detourKm, match.detourMinutes)}`}
           </Text>
         </View>
       </View>
@@ -116,21 +116,21 @@ export default function KirimDriverScreen() {
       <View style={styles.timeRow}>
         <Clock size={14} color={colors.text.muted} />
         <Text variant="caption" color={colors.text.secondary} style={{ marginLeft: 4 }}>
-          Berangkat: {formatTime(match.trip.departAt)} • Estimasi tiba: {formatTime(match.eta.dropoffAt)}
+          Berangkat {formatTime(match.trip.departAt)}, sampai sekitar {formatTime(match.eta.dropoffAt)}
         </Text>
       </View>
 
       <View style={styles.cardFooter}>
         <View>
           <Text variant="caption" color={colors.text.muted}>
-            Total Biaya
+            Ongkos
           </Text>
           <Text variant="headline" color={colors.primary} weight="700">
             {formatRupiah(match.price.total)}
           </Text>
         </View>
         <Button
-          label="Pilih Driver"
+          label="Pilih"
           variant="primary"
           size="sm"
           fullWidth={false}
@@ -144,11 +144,8 @@ export default function KirimDriverScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Pilih Pengemudi" />
-      <StepHeader
-        steps={['Paket', 'Rute', 'Driver', 'Konfirmasi']}
-        currentStep={3}
-      />
+      <TopBar title="Pilih pengemudi" />
+      <StepHeader steps={KIRIM_STEPS} currentStep={3} />
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -174,8 +171,8 @@ export default function KirimDriverScreen() {
             {/* Direct matches */}
             {directMatches.length > 0 && (
               <View style={styles.section}>
-                <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-                  Driver Searah Langsung ({directMatches.length})
+                <Text variant="headline" style={styles.sectionTitle}>
+                  Lewat rutemu ({directMatches.length})
                 </Text>
                 <View style={styles.list}>
                   {directMatches.map((m) => renderMatchCard(m, true))}
@@ -186,8 +183,8 @@ export default function KirimDriverScreen() {
             {/* Detour matches */}
             {detourMatches.length > 0 && (
               <View style={styles.section}>
-                <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-                  Driver dengan Simpangan Rute ({detourMatches.length})
+                <Text variant="headline" style={styles.sectionTitle}>
+                  Perlu belok sedikit ({detourMatches.length})
                 </Text>
                 <View style={styles.list}>
                   {detourMatches.map((m) => renderMatchCard(m, false))}
@@ -198,8 +195,8 @@ export default function KirimDriverScreen() {
             {/* If no matches found */}
             {totalMatches === 0 && (
               <EmptyState
-                title="Belum Ada Driver yang Pas"
-                description="Belum ada pengemudi terjadwal di rute dan jam yang Anda pilih."
+                title="Belum ada yang lewat sana"
+                description="Belum ada pengemudi yang terjadwal lewat rute ini. Kamu tetap bisa mengirim permintaan ke semua pengemudi."
                 icon={<Bike size={44} color={colors.text.muted} />}
               />
             )}
@@ -207,13 +204,13 @@ export default function KirimDriverScreen() {
             {/* Open Request Option */}
             <Card variant="flat" padding="lg" style={styles.openRequestCard}>
               <Text variant="headline" color={colors.text.primary} weight="700">
-                Tidak menemukan jadwal yang cocok?
+                Tidak ada yang cocok?
               </Text>
               <Text variant="callout" color={colors.text.secondary} style={styles.openDesc}>
-                Posting sebagai permintaan terbuka. Pengemudi lain yang melihat rute ini dapat menerima pesanan Anda.
+                Kirim ke semua pengemudi. Siapa pun yang lewat bisa menerima paketmu.
               </Text>
               <Button
-                label="Posting Permintaan Terbuka"
+                label="Kirim ke semua pengemudi"
                 variant="outline"
                 size="md"
                 onPress={handlePostOpen}

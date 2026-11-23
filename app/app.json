@@ -22,7 +22,16 @@
           "photosPermission": "Kirimin memerlukan akses galeri untuk melampirkan foto paket.",
           "cameraPermission": "Kirimin memerlukan akses kamera untuk mengambil foto paket dan bukti serah terima."
         }
-      ]
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      "expo-font"
     ],
     "android": {
       "package": "com.kirimin.app",

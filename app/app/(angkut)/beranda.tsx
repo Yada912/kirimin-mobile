@@ -1,213 +1,143 @@
 import React from 'react';
-import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  Navigation,
-  Plus,
-  ArrowRight,
-  Wallet,
-  Star,
-  Repeat,
-  SlidersHorizontal,
-  Bookmark,
-  MapPin,
-  Sparkles,
-} from 'lucide-react-native';
+import { Navigation, Plus, Wallet, Star, Repeat, MapPin, ChevronRight } from '../../src/ui/icons';
 import { colors, radii, spacing, shadows } from '../../src/theme/tokens';
-import {
-  Text,
-  Card,
-  StatusPill,
-  SkeletonCard,
-  Avatar,
-  DriverRouteArt,
-  BrandLogo,
-} from '../../src/ui';
+import { Text, SkeletonCard, Avatar, SearahScene, Button } from '../../src/ui';
 import { useAuth } from '../../src/auth/AuthContext';
-import { useTripsMine, useStats, useSavedPlaces } from '../../src/api/hooks/useApi';
+import { useTripsMine, useStats } from '../../src/api/hooks/useApi';
 import { formatRupiah, formatTime } from '../../src/utils/format';
-import { useRoutePresets, getPresetBg } from '../../src/features/presets/useRoutePresets';
+import { useRoutePresets } from '../../src/features/presets/useRoutePresets';
 
 export default function AngkutBerandaScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { width } = useWindowDimensions();
   const { data: trips, isLoading: tripsLoading } = useTripsMine('active');
   const { data: stats } = useStats();
-  const { data: savedPlaces = [] } = useSavedPlaces();
   const { presets } = useRoutePresets();
 
   const activeTrip = trips && trips.length > 0 ? trips[0] : null;
+  const firstName = (user?.name || 'kamu').split(' ')[0];
+  const ongoing = activeTrip?.status === 'ongoing';
+
+  const openTrip = () => {
+    if (!activeTrip) return;
+    router.push(
+      ongoing
+        ? { pathname: '/angkut/jalan/[tripId]', params: { tripId: activeTrip.id } }
+        : { pathname: '/angkut/permintaan/[tripId]', params: { tripId: activeTrip.id } },
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Compact Uber-style Driver Header */}
         <View style={styles.header}>
-          <Pressable onPress={() => router.push('/(angkut)/profil')} style={styles.userRow}>
-            <Avatar name={user?.name || 'Driver'} url={user?.avatarUrl} size={40} />
-            <View style={styles.userInfo}>
-              <BrandLogo size="sm" tone="angkut" />
-              <Text variant="captionMedium" color={colors.text.secondary} style={{ marginTop: 1 }}>
-                {user?.name || 'Driver'} • {user?.vehicle?.plate || 'Siap Jalan'}
-              </Text>
-            </View>
+          <Pressable onPress={() => router.push('/(angkut)/profil')} style={styles.userRow} hitSlop={6}>
+            <Avatar name={user?.name || 'Pengemudi'} url={user?.avatarUrl} size={40} />
+            <Text variant="title" color={colors.driverDeep} style={{ marginLeft: spacing.sm }}>
+              Halo, {firstName}
+            </Text>
           </Pressable>
-
-          <Pressable
-            onPress={() => router.push('/(auth)/pilih-peran')}
-            style={styles.roleSwitch}
-          >
-            <Repeat size={13} color={colors.driver} />
-            <Text variant="captionMedium" color={colors.driver} weight="700" style={{ marginLeft: 4 }}>
-              Angkut
+          <Pressable onPress={() => router.push('/(auth)/pilih-peran')} style={styles.roleSwitch} hitSlop={6}>
+            <Repeat size={14} color={colors.sawah} />
+            <Text variant="captionMedium" color={colors.sawah} weight="700" style={{ marginLeft: 6 }}>
+              Ganti ke pengirim
             </Text>
           </Pressable>
         </View>
 
-        {/* Active Trip Live Card (1-tap jump straight into live road navigation) */}
+        {/* The one thing to do next: run the trip you have, or post one. */}
         {tripsLoading ? (
           <SkeletonCard />
-        ) : activeTrip ? (
-          <Pressable
-            onPress={() => {
-              if (activeTrip.status === 'ongoing') {
-                router.push({ pathname: '/angkut/jalan/[tripId]', params: { tripId: activeTrip.id } });
-              } else {
-                router.push({ pathname: '/angkut/permintaan/[tripId]', params: { tripId: activeTrip.id } });
-              }
-            }}
-            style={styles.activeTripBanner}
-          >
-            <View style={{ flex: 1, marginRight: spacing.sm }}>
-              <View style={styles.activeTripTop}>
-                <View style={styles.tripTag}>
-                  <Navigation size={12} color={colors.driverDeep} />
-                  <Text variant="captionMedium" color={colors.driverDeep} weight="700" style={{ marginLeft: 4 }}>
-                    {activeTrip.name}
-                  </Text>
-                </View>
-                <StatusPill status={activeTrip.status} />
+        ) : (
+          <View style={styles.hero}>
+            <View style={StyleSheet.absoluteFill}>
+              <SearahScene width={width - spacing.lg * 2} height={250} tone="angkut" />
+            </View>
+            {activeTrip ? (
+              <View>
+                <Text variant="callout" color={colors.sawahLight}>
+                  {ongoing ? 'Sedang berjalan' : `Berangkat ${formatTime(activeTrip.departAt)}`}
+                </Text>
+                <Text variant="largeTitle" color="#FFFFFF" numberOfLines={2} style={{ marginTop: 2 }}>
+                  {activeTrip.origin.label} ke {activeTrip.destination.label}
+                </Text>
+                <Text variant="callout" color={colors.sawahLight} style={{ marginTop: 4 }}>
+                  {activeTrip.slotsUsed} dari {activeTrip.maxPackages} tempat paket terisi
+                </Text>
               </View>
-              <Text variant="calloutSemibold" color={colors.text.primary} numberOfLines={1} style={{ marginTop: 4 }}>
-                {activeTrip.origin.label} → {activeTrip.destination.label}
-              </Text>
-              <Text variant="caption" color={colors.text.secondary} style={{ marginTop: 2 }}>
-                {formatTime(activeTrip.departAt)} • {activeTrip.slotsUsed}/{activeTrip.maxPackages} slot terisi
-              </Text>
-            </View>
-            <View style={styles.openNavPill}>
-              <Text variant="captionMedium" color="#FFFFFF" weight="700">
-                {activeTrip.status === 'ongoing' ? 'Navigasi' : 'Buka'}
-              </Text>
-              <ArrowRight size={13} color="#FFFFFF" style={{ marginLeft: 3 }} />
-            </View>
+            ) : (
+              <View style={{ maxWidth: 270 }}>
+                <Text variant="largeTitle" color="#FFFFFF">
+                  Lewat mana hari ini?
+                </Text>
+                <Text variant="callout" color={colors.sawahLight} style={{ marginTop: 4 }}>
+                  Pasang rutemu, pengirim yang searah akan menitipkan paket.
+                </Text>
+              </View>
+            )}
+            <Button
+              label={activeTrip ? (ongoing ? 'Lanjutkan navigasi' : 'Lihat permintaan') : 'Pasang rute'}
+              size="lg"
+              leftIcon={activeTrip ? <Navigation size={18} color={colors.driverDeep} /> : <Plus size={18} color={colors.driverDeep} />}
+              onPress={activeTrip ? openTrip : () => router.push('/angkut/buat-rute')}
+              style={styles.heroBtn}
+              textColor={colors.driverDeep}
+              testID={activeTrip ? 'active-trip-cta' : 'buat-rute-cta'}
+            />
+          </View>
+        )}
+
+        {activeTrip ? (
+          <Pressable onPress={() => router.push('/angkut/buat-rute')} style={styles.secondaryLink} testID="buat-rute-cta">
+            <Plus size={16} color={colors.sawah} />
+            <Text variant="calloutSemibold" color={colors.sawah} style={{ marginLeft: 6 }}>
+              Pasang rute lain
+            </Text>
           </Pressable>
         ) : null}
 
-        {/* LARGE EMERALD DRIVER HERO BANNER (Playful Map Art + 1-Tap Publish above the fold!) */}
-        <View style={styles.heroBanner}>
-          <View style={styles.heroTop}>
-            <View style={styles.heroCopy}>
-              <View style={styles.heroPill}>
-                <Sparkles size={11} color="#FDE047" />
-                <Text variant="caption" color="#FDE047" weight="700" style={{ marginLeft: 4, fontSize: 10 }}>
-                  CUAN DI RUTE HARIAN
-                </Text>
-              </View>
-              <Text variant="title" color="#FFFFFF" weight="700" style={styles.heroHeading}>
-                Buka Rute & Angkut Paket
-              </Text>
-              <Text variant="caption" color="#D1FAE5" style={styles.heroSub}>
-                Navigasi jalan pintar + ongkos langsung masuk saldo.
-              </Text>
+        <View style={styles.statsCard}>
+          <View style={styles.stat}>
+            <View style={[styles.statIcon, { backgroundColor: colors.sawahLight }]}>
+              <Wallet size={20} color={colors.sawah} />
             </View>
-            <DriverRouteArt width={116} height={94} />
-          </View>
-
-          <Pressable
-            onPress={() => router.push('/angkut/buat-rute')}
-            style={({ pressed }) => [styles.heroPrimaryBtn, pressed && { opacity: 0.9 }]}
-            testID="buat-rute-cta"
-          >
-            <Plus size={18} color={colors.driverDeep} />
-            <Text variant="headline" color={colors.driverDeep} weight="700" style={{ marginLeft: 6 }}>
-              Publikasikan Rute Baru
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* ABOVE-THE-FOLD STATS & QUICK CUSTOMIZE STRIP */}
-        <View style={styles.statsRow}>
-          <Card variant="flat" padding="md" style={styles.statCardGreen}>
-            <View style={styles.statHeader}>
-              <Wallet size={16} color={colors.driver} />
-              <Text variant="captionMedium" color={colors.driverDeep} weight="600">
+            <View style={{ marginLeft: spacing.sm }}>
+              <Text variant="caption" color={colors.text.secondary}>
                 Penghasilan
               </Text>
+              <Text variant="headline">{formatRupiah(stats?.driver?.earningsTotal ?? 0)}</Text>
             </View>
-            <Text variant="title" color={colors.text.primary} weight="700" style={{ marginTop: 4 }}>
-              {formatRupiah(stats?.driver?.earningsTotal ?? 48000)}
-            </Text>
-            <Text variant="caption" color={colors.text.secondary}>
-              {user?.deliveriesCount ?? 0}x paket diantar
-            </Text>
-          </Card>
-
-          <Card variant="flat" padding="md" style={styles.statCardAmber}>
-            <View style={styles.statHeader}>
-              <Star size={16} color={colors.accent.amber} />
-              <Text variant="captionMedium" color="#92400E" weight="600">
-                Reputasi Driver
-              </Text>
-            </View>
-            <Text variant="title" color={colors.text.primary} weight="700" style={{ marginTop: 4 }}>
-              {user?.ratingAvg ? user.ratingAvg.toFixed(1) : '5.0'} ★
-            </Text>
-            <Text variant="caption" color={colors.text.secondary}>
-              {user?.ratingCount ?? 0} ulasan pengirim
-            </Text>
-          </Card>
-        </View>
-
-        {/* Quick Customization Tools (Thumb-reach) */}
-        <View style={styles.toolsRow}>
-          <Pressable onPress={() => router.push('/kelola/preset')} style={styles.toolChip}>
-            <SlidersHorizontal size={14} color={colors.accent.coral} />
-            <Text variant="captionMedium" color={colors.text.primary} weight="700" style={{ marginLeft: 5 }}>
-              Edit Preset ({presets.length})
-            </Text>
-          </Pressable>
-
-          <Pressable onPress={() => router.push('/kelola/lokasi')} style={styles.toolChip}>
-            <Bookmark size={14} color={colors.accent.violet} />
-            <Text variant="captionMedium" color={colors.text.primary} weight="700" style={{ marginLeft: 5 }}>
-              Lokasi ({savedPlaces.length})
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* BELOW THE FOLD: Quick-Publish Commute Presets */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text variant="headline" color={colors.text.primary} weight="700">
-              Terbitkan dari Preset Rute
-            </Text>
-            <Pressable onPress={() => router.push('/kelola/preset')}>
-              <Text variant="captionMedium" color={colors.driver} weight="700">
-                Kelola
-              </Text>
-            </Pressable>
           </View>
+          <View style={styles.statDivider} />
+          <View style={styles.stat}>
+            <View style={[styles.statIcon, { backgroundColor: colors.kunyitLight }]}>
+              <Star size={20} color="#B7791F" weight="fill" />
+            </View>
+            <View style={{ marginLeft: spacing.sm }}>
+              <Text variant="caption" color={colors.text.secondary}>
+                {user?.ratingCount ?? 0} ulasan
+              </Text>
+              <Text variant="headline">{user?.ratingAvg ? user.ratingAvg.toFixed(1) : 'Baru'}</Text>
+            </View>
+          </View>
+        </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.presetCarousel}
-          >
-            {presets.map((preset) => {
-              const accent = preset.color || colors.driver;
-              return (
+        {presets.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <Text variant="headline">Pasang lagi rute favorit</Text>
+              <Pressable onPress={() => router.push('/kelola/preset')} hitSlop={8}>
+                <Text variant="calloutSemibold" color={colors.sawah}>
+                  Atur
+                </Text>
+              </Pressable>
+            </View>
+            <View style={styles.list}>
+              {presets.slice(0, 3).map((preset, i) => (
                 <Pressable
                   key={preset.id}
                   onPress={() =>
@@ -220,22 +150,25 @@ export default function AngkutBerandaScreen() {
                       },
                     })
                   }
-                  style={[styles.presetCard, { borderLeftColor: accent }]}
+                  style={({ pressed }) => [styles.listRow, i > 0 && styles.listDivider, pressed && { backgroundColor: colors.surfaceSecondary }]}
                 >
-                  <View style={[styles.presetIcon, { backgroundColor: getPresetBg(accent) }]}>
-                    <MapPin size={14} color={accent} />
+                  <View style={[styles.pinTile, { backgroundColor: colors.sawahLight }]}>
+                    <MapPin size={20} color={colors.sawah} />
                   </View>
-                  <Text variant="calloutSemibold" color={colors.text.primary} numberOfLines={1} style={{ marginTop: 6 }}>
-                    {preset.name}
-                  </Text>
-                  <Text variant="caption" color={colors.text.secondary} numberOfLines={1}>
-                    {preset.pickup.label} → {preset.dropoff.label}
-                  </Text>
+                  <View style={{ flex: 1, marginLeft: spacing.md }}>
+                    <Text variant="calloutSemibold" numberOfLines={1}>
+                      {preset.name}
+                    </Text>
+                    <Text variant="caption" color={colors.text.secondary} numberOfLines={1}>
+                      {preset.pickup.label} ke {preset.dropoff.label}
+                    </Text>
+                  </View>
+                  <ChevronRight size={16} color={colors.text.muted} />
                 </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
+              ))}
+            </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -247,172 +180,105 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.md,
-    paddingBottom: 28,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xxxl,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  userInfo: {
-    marginLeft: spacing.sm,
-  },
   roleSwitch: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: radii.full,
-    backgroundColor: colors.driverSubtle,
-    borderWidth: 1,
-    borderColor: colors.driverLight,
-  },
-  activeTripBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.driverSubtle,
-    borderWidth: 1,
-    borderColor: colors.driverLight,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.driver,
-    borderRadius: radii.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    ...shadows.card,
-  },
-  activeTripTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 6,
-  },
-  tripTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  openNavPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.driver,
-    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: radii.full,
+    backgroundColor: colors.sawahLight,
   },
-  heroBanner: {
-    backgroundColor: colors.driver,
+  hero: {
+    minHeight: 250,
     borderRadius: radii.xl,
+    overflow: 'hidden',
+    backgroundColor: colors.driverDeep,
     padding: spacing.lg,
+    justifyContent: 'space-between',
     marginBottom: spacing.md,
     ...shadows.float,
   },
-  heroTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  heroCopy: {
-    flex: 1,
-    paddingRight: spacing.xs,
-  },
-  heroPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    borderRadius: radii.full,
-    marginBottom: 6,
-  },
-  heroHeading: {
-    fontSize: 21,
-    lineHeight: 26,
-  },
-  heroSub: {
-    marginTop: 4,
-    lineHeight: 17,
-  },
-  heroPrimaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  heroBtn: {
     backgroundColor: '#FFFFFF',
-    height: 48,
-    borderRadius: radii.md,
-    ...shadows.card,
+    marginTop: spacing.lg,
   },
-  statsRow: {
+  secondaryLink: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    alignItems: 'center',
+    alignSelf: 'center',
+    paddingVertical: spacing.sm,
     marginBottom: spacing.sm,
   },
-  statCardGreen: {
-    flex: 1,
-    backgroundColor: colors.driverSubtle,
-    borderWidth: 1,
-    borderColor: colors.driverLight,
-  },
-  statCardAmber: {
-    flex: 1,
-    backgroundColor: colors.accent.amberLight,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  statHeader: {
+  statsCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-  },
-  toolsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
     marginBottom: spacing.lg,
+    marginTop: spacing.sm,
   },
-  toolChip: {
+  stat: {
     flex: 1,
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingVertical: 10,
+  },
+  statDivider: {
+    width: StyleSheet.hairlineWidth,
+    alignSelf: 'stretch',
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.md,
   },
   section: {
     marginBottom: spacing.lg,
   },
-  sectionHeader: {
+  sectionHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
   },
-  presetCarousel: {
-    gap: spacing.sm,
-    paddingRight: spacing.sm,
-  },
-  presetCard: {
-    width: 204,
+  list: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    borderLeftWidth: 4,
-    ...shadows.card,
+    overflow: 'hidden',
   },
-  presetIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 9,
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: 64,
+  },
+  listDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  pinTile: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
   },

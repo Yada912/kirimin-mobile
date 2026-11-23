@@ -3,7 +3,7 @@ import { StyleSheet, View, ScrollView, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, CheckCircle2, ShieldCheck } from 'lucide-react-native';
+import { Camera, CheckCircle2, ShieldCheck } from '../../src/ui/icons';
 import { colors, radii, spacing } from '../../src/theme/tokens';
 import {
   Text,
@@ -15,6 +15,7 @@ import {
   SkeletonCard,
   ErrorState,
   HandoverSparkArt,
+  SuccessBurstArt,
 } from '../../src/ui';
 import { useOrder, useDeliverOrder } from '../../src/api/hooks/useApi';
 import { uploadImage } from '../../src/api/client';
@@ -81,7 +82,7 @@ export default function SerahTerimaScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Serah Terima" />
+        <TopBar title="Serahkan paket" />
         <View style={styles.content}>
           <SkeletonCard />
         </View>
@@ -92,7 +93,7 @@ export default function SerahTerimaScreen() {
   if (isError || !order) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Serah Terima" />
+        <TopBar title="Serahkan paket" />
         <ErrorState message={(error as any)?.message || 'Pesanan tidak ditemukan'} />
       </SafeAreaView>
     );
@@ -102,16 +103,16 @@ export default function SerahTerimaScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.successContainer}>
-          <HandoverSparkArt width={100} height={100} />
+          <SuccessBurstArt size={120} />
           <Text variant="largeTitle" color={colors.text.primary} weight="700" align="center" style={styles.successTitle}>
-            Paket Berhasil Diserahkan!
+            Paket sudah diserahkan
           </Text>
           <Text variant="callout" color={colors.text.secondary} align="center" style={styles.successDesc}>
-            Kode serah terima terverifikasi. Pembayaran akan diteruskan ke saldo Anda.
+            Kodenya cocok. Penghasilanmu masuk ke saldo.
           </Text>
 
           <Button
-            label="Kembali ke Perjalanan"
+            label="Kembali ke perjalanan"
             variant="primary"
             size="lg"
             onPress={() => {
@@ -130,7 +131,7 @@ export default function SerahTerimaScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Serah Terima Paket" />
+      <TopBar title="Serahkan paket" />
 
       <ScrollView contentContainerStyle={styles.content}>
         {deliverError && (
@@ -158,10 +159,10 @@ export default function SerahTerimaScreen() {
         <Card variant="elevated" padding="lg" style={styles.inputCard}>
           <HandoverSparkArt width={64} height={64} />
           <Text variant="title" color={colors.text.primary} weight="700" align="center" style={styles.cardHeading}>
-            Masukkan Kode 4 Digit
+            Masukkan kode dari penerima
           </Text>
           <Text variant="callout" color={colors.text.secondary} align="center" style={styles.cardSub}>
-            Minta penerima paket menyebutkan 4 digit kode rahasia yang tertera di aplikasi mereka.
+            Minta penerima menyebutkan 4 digit kode yang ada di aplikasinya.
           </Text>
 
           <CodeInput value={code} onChange={setCode} length={4} testID="handover-code" />
@@ -170,14 +171,14 @@ export default function SerahTerimaScreen() {
         {/* Proof Photo (Optional for meet, mandatory if leave at location) */}
         <View style={styles.photoSection}>
           <Text variant="headline" color={colors.text.primary} weight="700" style={styles.photoTitle}>
-            Foto Bukti Serah Terima (Opsional)
+            Foto bukti (opsional)
           </Text>
 
           {photoUri ? (
             <View style={styles.photoPreviewWrapper}>
               <Image source={{ uri: photoUri }} style={styles.photoPreview} />
               <Button
-                label="Foto Ulang"
+                label="Foto ulang"
                 variant="secondary"
                 size="sm"
                 onPress={handlePickPhoto}
@@ -188,10 +189,10 @@ export default function SerahTerimaScreen() {
             <Card onPress={handlePickPhoto} variant="outlined" padding="md" style={styles.photoPickerCard}>
               <Camera size={24} color={colors.primary} />
               <Text variant="calloutSemibold" color={colors.primary} style={{ marginTop: 4 }}>
-                Ambil Foto Paket di Lokasi
+                Foto paket di lokasi
               </Text>
               <Text variant="caption" color={colors.text.muted}>
-                Sebagai bukti dokumentasi pengantaran
+                Bukti kalau paket sudah sampai
               </Text>
             </Card>
           )}
@@ -199,7 +200,7 @@ export default function SerahTerimaScreen() {
 
         {/* Complete Deliver Action */}
         <Button
-          label="Konfirmasi Selesai Antar"
+          label="Selesai, paket diserahkan"
           variant="primary"
           size="lg"
           loading={isDelivering || uploading}

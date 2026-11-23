@@ -24,6 +24,8 @@ export interface ButtonProps {
   fullWidth?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  /** Overrides the label colour (e.g. a white button on a coloured banner). */
+  textColor?: string;
   style?: StyleProp<ViewStyle>;
   /** For E2E tests (Maestro `id:`). */
   testID?: string;
@@ -39,6 +41,7 @@ export function Button({
   fullWidth = true,
   leftIcon,
   rightIcon,
+  textColor,
   style,
   testID,
 }: ButtonProps) {
@@ -77,7 +80,7 @@ export function Button({
       borderColor = 'transparent';
     }
 
-    const height = size === 'lg' ? 50 : size === 'md' ? 44 : 36;
+    const height = size === 'lg' ? 54 : size === 'md' ? 44 : 36;
     const paddingHorizontal = size === 'sm' ? spacing.md : spacing.lg;
 
     return {
@@ -87,7 +90,7 @@ export function Button({
       height,
       minHeight: touchTarget.minHeight,
       paddingHorizontal,
-      borderRadius: radii.md,
+      borderRadius: size === 'lg' ? radii.lg : radii.md,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -99,6 +102,7 @@ export function Button({
   // Label color by variant
   const getLabelColor = (): string => {
     if (disabled) return colors.text.muted;
+    if (textColor) return textColor;
     switch (variant) {
       case 'primary':
       case 'danger':
@@ -130,7 +134,7 @@ export function Button({
           <Text
             variant={size === 'sm' ? 'captionMedium' : 'headline'}
             color={getLabelColor()}
-            weight="600"
+            weight="700"
           >
             {label}
           </Text>

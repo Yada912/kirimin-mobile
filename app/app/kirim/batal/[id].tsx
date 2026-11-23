@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AlertTriangle } from 'lucide-react-native';
+import { AlertTriangle } from '../../../src/ui/icons';
 import { colors, spacing } from '../../../src/theme/tokens';
 import { Text, TopBar, Card, Button, ChipGroup, TextField, SkeletonCard, ErrorState } from '../../../src/ui';
 import { useOrder, useCancelOrder } from '../../../src/api/hooks/useApi';
@@ -30,7 +30,7 @@ export default function KirimBatalScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Batalkan Pesanan" />
+        <TopBar title="Batalkan pesanan" />
         <View style={styles.content}>
           <SkeletonCard />
         </View>
@@ -41,7 +41,7 @@ export default function KirimBatalScreen() {
   if (isError || !order) {
     return (
       <SafeAreaView style={styles.safe}>
-        <TopBar title="Batalkan Pesanan" />
+        <TopBar title="Batalkan pesanan" />
         <ErrorState message={(error as any)?.message || 'Pesanan tidak ditemukan'} />
       </SafeAreaView>
     );
@@ -65,7 +65,7 @@ export default function KirimBatalScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Batalkan Pesanan" />
+      <TopBar title="Batalkan pesanan" />
 
       <ScrollView contentContainerStyle={styles.content}>
         {cancelError && (
@@ -80,7 +80,7 @@ export default function KirimBatalScreen() {
           <View style={styles.warningHeader}>
             <AlertTriangle size={24} color={colors.semantic.warning} />
             <Text variant="headline" color={colors.text.primary} weight="700" style={{ marginLeft: spacing.sm }}>
-              Konfirmasi Pembatalan
+              Batalkan pesanan ini?
             </Text>
           </View>
           <Text variant="callout" color={colors.text.secondary} style={{ marginTop: spacing.xs }}>
@@ -90,7 +90,7 @@ export default function KirimBatalScreen() {
 
         <View style={styles.section}>
           <Text variant="headline" color={colors.text.primary} weight="700" style={styles.sectionTitle}>
-            Pilih Alasan Pembatalan
+            Kenapa dibatalkan?
           </Text>
           <ChipGroup<string>
             items={CANCEL_REASONS.map((r) => ({ value: r, label: r }))}
@@ -102,7 +102,7 @@ export default function KirimBatalScreen() {
         {reason === 'Lainnya' && (
           <View style={styles.section}>
             <TextField
-              label="Alasan Lainnya"
+              label="Alasan lain"
               placeholder="Tuliskan alasan pembatalan..."
               value={customNote}
               onChangeText={setCustomNote}
@@ -113,7 +113,7 @@ export default function KirimBatalScreen() {
         )}
 
         <Button
-          label="Ya, Batalkan Pesanan Ini"
+          label="Ya, batalkan"
           variant="danger"
           size="lg"
           loading={isPending}

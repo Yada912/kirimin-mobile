@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Package, Bike, Check } from 'lucide-react-native';
+import { Package, Bike, Check } from '../../src/ui/icons';
 import type { Role } from '@kirimin/shared';
 import { colors, radii, spacing } from '../../src/theme/tokens';
-import { Text, TopBar, Card, Button, BrandLogo } from '../../src/ui';
+import { Text, TopBar, Card, Button } from '../../src/ui';
 import { useAuth } from '../../src/auth/AuthContext';
 
 export default function PilihPeranScreen() {
@@ -32,19 +32,14 @@ export default function PilihPeranScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Pilih Peran Anda" canGoBack={false} />
+      <TopBar title="" canGoBack={false} />
       <View style={styles.container}>
         <View style={styles.header}>
-          <BrandLogo
-            size="lg"
-            tone={selectedRole === 'driver' ? 'angkut' : 'kirim'}
-            style={{ alignSelf: 'center', marginBottom: spacing.xs }}
-          />
-          <Text variant="title" color={colors.text.primary} weight="700" align="center">
-            Mau melakukan apa hari ini?
+          <Text variant="largeTitle" color={colors.laut} align="center">
+            Mau apa hari ini?
           </Text>
           <Text variant="callout" color={colors.text.secondary} align="center" style={styles.sub}>
-            Anda dapat beralih peran kapan saja melalui menu profil.
+            Bisa diganti kapan saja dari Profil.
           </Text>
         </View>
 
@@ -68,10 +63,10 @@ export default function PilihPeranScreen() {
               )}
             </View>
             <Text variant="headline" color={colors.text.primary} weight="700" style={styles.roleTitle}>
-              Kirim (Pengirim Paket)
+              Kirim paket
             </Text>
             <Text variant="callout" color={colors.text.secondary}>
-              Kirim barang titip ke teman pengemudi yang searah perjalanan. Lebih hemat dan praktis.
+              Titipkan barang ke pengendara yang lewat tujuanmu.
             </Text>
           </Card>
 
@@ -84,8 +79,8 @@ export default function PilihPeranScreen() {
             ]}
           >
             <View style={styles.cardHeader}>
-              <View style={[styles.iconBox, { backgroundColor: '#DCFCE7' }]}>
-                <Bike size={28} color={colors.semantic.success} />
+              <View style={[styles.iconBox, { backgroundColor: colors.sawahLight }]}>
+                <Bike size={28} color={colors.sawah} />
               </View>
               {selectedRole === 'driver' && (
                 <View style={styles.checkBadge}>
@@ -94,16 +89,16 @@ export default function PilihPeranScreen() {
               )}
             </View>
             <Text variant="headline" color={colors.text.primary} weight="700" style={styles.roleTitle}>
-              Angkut (Pengemudi)
+              Antar sambil jalan
             </Text>
             <Text variant="callout" color={colors.text.secondary}>
-              Bawa barang titipan di rute perjalanan harian Anda dan dapatkan penghasilan tambahan.
+              Bawa titipan di rute harianmu dan dapat uang tambahan.
             </Text>
           </Card>
         </View>
 
         <Button
-          label="Lanjutkan"
+          label={selectedRole === 'driver' ? 'Lanjut sebagai pengemudi' : 'Lanjut sebagai pengirim'}
           variant="primary"
           size="lg"
           loading={loading}

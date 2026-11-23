@@ -11,7 +11,7 @@ import {
   Home,
   Briefcase,
   GraduationCap,
-} from 'lucide-react-native';
+} from './icons';
 import type { Place, SavedPlace, SavedPlaceKind } from '@kirimin/shared';
 import { SAVED_PLACE_LABELS } from '@kirimin/shared';
 import { BALI_PLACES, BaliPlace, describeCoordinates } from '../constants/places';

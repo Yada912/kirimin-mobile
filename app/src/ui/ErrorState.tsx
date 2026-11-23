@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
-import { AlertCircle } from 'lucide-react-native';
+import { AlertCircle } from './icons';
 import { colors, spacing } from '../theme/tokens';
 import { Text } from './Text';
 import { Button } from './Button';
@@ -23,7 +23,7 @@ export function ErrorState({
       </View>
 
       <Text variant="headline" color={colors.text.primary} weight="700" align="center" style={styles.title}>
-        Gagal Memuat
+        Tidak bisa dimuat
       </Text>
 
       <Text variant="callout" color={colors.text.secondary} align="center" style={styles.message}>
@@ -32,7 +32,7 @@ export function ErrorState({
 
       {onRetry && (
         <Button
-          label="Coba Lagi"
+          label="Coba lagi"
           onPress={onRetry}
           variant="secondary"
           size="md"
@@ -67,7 +67,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   retryBtn: {
-    minWidth: 120,
+    minWidth: 140,
+    alignSelf: 'center',
   },
 });
 

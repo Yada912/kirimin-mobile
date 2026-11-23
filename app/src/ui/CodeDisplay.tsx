@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View, ViewStyle } from 'react-native';
-import { Copy, Check } from 'lucide-react-native';
+import { Copy, Check } from './icons';
 import { colors, radii, spacing } from '../theme/tokens';
 import { Text } from './Text';
 
