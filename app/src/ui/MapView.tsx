@@ -82,6 +82,20 @@ export interface MapViewProps {
   onRouteComputed?: (route: RoadRoute) => void;
   /** Allows expanding the map into fullscreen interactive mode */
   allowExpand?: boolean;
+  /**
+   * When given together with onSelectLocation, the map shows a small
+   * "Ketuk peta: Jemput | Antar" switch so the user picks which pin a tap moves,
+   * without leaving the inline map.
+   */
+  onSelectionModeChange?: (mode: 'pickup' | 'dropoff') => void;
+  /**
+   * Called with true while a finger is on the map and false when it lifts. Screens put
+   * the map inside a ScrollView; they use this to pause page scrolling so drags pan the
+   * map and pinches zoom it instead of scrolling the page.
+   */
+  onInteractionChange?: (active: boolean) => void;
+  /** Height of a card that overlaps the bottom of the map; bottom overlays move above it. */
+  overlayBottomInset?: number;
 }
 
 const NativeWebView = WebView as unknown as React.ComponentType<any>;
@@ -123,7 +137,13 @@ export function MapView({
   navigationMode = false,
   onRouteComputed,
   allowExpand = true,
+  onSelectionModeChange,
+  onInteractionChange,
+  overlayBottomInset = 0,
 }: MapViewProps) {
+  const editable = !!onSelectLocation;
+  // Set when the user moves a pin on the map, so the map keeps its zoom instead of re-fitting.
+  const userEditedRef = useRef(false);
   const webViewRef = useRef<any>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const fullWebViewRef = useRef<any>(null);
@@ -220,7 +240,7 @@ export function MapView({
           lng: dropoff.lng,
           title: (dropoff as Place).label || 'Titik Tujuan',
           subtitle: (dropoff as Place).address || 'Lokasi pengantaran paket',
-          color: colors.driver,
+          color: colors.senja,
           type: 'dropoff',
         });
       }
@@ -265,6 +285,7 @@ export function MapView({
       followDriver: followDriver && !!driverLocation,
       layer,
       selectionMode,
+      editable,
     }),
     [
       allMarkers,
@@ -276,6 +297,7 @@ export function MapView({
       followDriver,
       layer,
       selectionMode,
+      editable,
     ],
   );
 
@@ -310,6 +332,11 @@ export function MapView({
 
   const hasFitOnceRef = useRef(false);
   useEffect(() => {
+    if (userEditedRef.current) {
+      // The user placed this pin themselves: keep their pan/zoom.
+      userEditedRef.current = false;
+      return;
+    }
     hasFitOnceRef.current = false;
   }, [waypointsKey]);
 
@@ -344,6 +371,7 @@ export function MapView({
   const handleMapTap = useCallback(
     (lat: number, lng: number) => {
       if (!selectionMode || !onSelectLocation) return;
+      userEditedRef.current = true;
       const clampedLat = Math.max(-8.86, Math.min(-8.55, lat));
       const clampedLng = Math.max(115.08, Math.min(115.32, lng));
       onSelectLocation(
@@ -365,6 +393,16 @@ export function MapView({
         setWebReady(true);
       } else if (msg.type === 'KIRIMIN_MAP_TAP') {
         handleMapTap(msg.lat, msg.lng);
+      } else if (msg.type === 'KIRIMIN_MARKER_MOVED') {
+        if (onSelectLocation && (msg.markerType === 'pickup' || msg.markerType === 'dropoff')) {
+          userEditedRef.current = true;
+          const lat = Math.max(-8.86, Math.min(-8.55, msg.lat));
+          const lng = Math.max(115.08, Math.min(115.32, msg.lng));
+          onSelectLocation(
+            { label: describeCoordinates(lat, lng), lat: Number(lat.toFixed(5)), lng: Number(lng.toFixed(5)) },
+            msg.markerType,
+          );
+        }
       } else if (msg.type === 'KIRIMIN_MAP_DRAG') {
         setFollowDriver(false);
       } else if (msg.type === 'KIRIMIN_MARKER_TAP') {
@@ -381,7 +419,7 @@ export function MapView({
         setWebFailed(true);
       }
     },
-    [handleMapTap, allMarkers],
+    [handleMapTap, allMarkers, onSelectLocation],
   );
 
   // Listen to Web iframe postMessages
@@ -458,22 +496,33 @@ export function MapView({
         attributionControl: false,
         dragging: ${interactive},
         touchZoom: ${interactive},
-        doubleClickZoom: ${interactive},
-        scrollWheelZoom: ${interactive}
+        // A single tap places a pin, so double-tap zoom would fire two taps; pinch or +/- zoom instead.
+        doubleClickZoom: ${interactive && !editable},
+        scrollWheelZoom: ${interactive},
+        zoomSnap: 0.5,
+        bounceAtZoomLimits: false,
+        tapTolerance: 12
       }).setView([${DEFAULT_CENTER.lat}, ${DEFAULT_CENTER.lng}], 12);
 
+      // "Bersih" (default) is CARTO Voyager: soft colours, few shop/POI labels, roads easy to read.
+      // "Detail" is standard OpenStreetMap; "Malam" is CARTO Dark Matter.
       const osmUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+      const cartoVoyager = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+      const cartoDark = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+      const credit = '&copy; OpenStreetMap';
       const tiles = {
-        apple: L.tileLayer(osmUrl, { maxZoom: 19, className: 'tile-apple' }),
-        osm: L.tileLayer(osmUrl, { maxZoom: 19, className: 'tile-osm' }),
-        dark: L.tileLayer(osmUrl, { maxZoom: 19, className: 'tile-dark' })
+        apple: L.tileLayer(cartoVoyager, { maxZoom: 20, subdomains: 'abcd', attribution: credit + ', &copy; CARTO', className: 'tile-clean' }),
+        osm: L.tileLayer(osmUrl, { maxZoom: 19, attribution: credit }),
+        dark: L.tileLayer(cartoDark, { maxZoom: 20, subdomains: 'abcd', attribution: credit + ', &copy; CARTO' })
       };
+      L.control.attribution({ position: 'bottomright', prefix: false }).addTo(map);
 
       const styleEl = document.createElement('style');
       styleEl.textContent =
-        '.tile-apple { filter: saturate(0.82) contrast(0.96) brightness(1.04) hue-rotate(-4deg); }' +
-        '.tile-osm { filter: none; }' +
-        '.tile-dark { filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(92%) saturate(0.85); }';
+        '.tile-clean { filter: saturate(0.9) brightness(1.02); }' +
+        '.leaflet-control-attribution { font-size: 8px !important; background: rgba(255,255,255,0.6) !important; padding: 0 4px !important; }' +
+        '.leaflet-container { cursor: ${editable ? 'crosshair' : 'grab'}; }' +
+        '.leaflet-bottom { bottom: ${overlayBottomInset}px; }';
       document.head.appendChild(styleEl);
 
       let activeLayerName = '${defaultLayer === 'vector' ? 'apple' : defaultLayer}';
@@ -557,7 +606,14 @@ export function MapView({
           }
 
           const icon = L.divIcon({ className: '', html: html, iconSize: [0, 0] });
-          const marker = L.marker(pos, { icon: icon, zIndexOffset: m.type === 'driver' ? 500 : 100 }).addTo(markerLayer);
+          const canDrag = !!data.editable && (m.type === 'pickup' || m.type === 'dropoff');
+          const marker = L.marker(pos, { icon: icon, draggable: canDrag, autoPan: true, zIndexOffset: m.type === 'driver' ? 500 : 100 }).addTo(markerLayer);
+          if (canDrag) {
+            marker.on('dragend', function() {
+              const ll = marker.getLatLng();
+              postMsg({ type: 'KIRIMIN_MARKER_MOVED', markerType: m.type, lat: ll.lat, lng: ll.lng });
+            });
+          }
           marker.on('click', function(ev) {
             L.DomEvent.stopPropagation(ev);
             postMsg({
@@ -624,7 +680,7 @@ export function MapView({
 </body>
 </html>`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [interactive]);
+  }, [interactive, editable, overlayBottomInset]);
 
   // ─── Upgraded Offline Vector Map (South Bali Road Network SVG) ───────────────
   const vectorBounds = useMemo(() => {
@@ -786,6 +842,9 @@ export function MapView({
           fullscreenSurface ? styles.fullscreenContainer : { height },
           !fullscreenSurface && style,
         ]}
+        onTouchStart={fullscreenSurface ? undefined : () => onInteractionChange?.(true)}
+        onTouchEnd={fullscreenSurface ? undefined : () => onInteractionChange?.(false)}
+        onTouchCancel={fullscreenSurface ? undefined : () => onInteractionChange?.(false)}
       >
         {useVector ? (
           renderVectorMap(surfaceHeight)
@@ -807,6 +866,7 @@ export function MapView({
             originWhitelist={['*']}
             source={{ html: initialHtml }}
             scrollEnabled={false}
+            nestedScrollEnabled
             onError={() => setWebFailed(true)}
             onMessage={(event: { nativeEvent: { data: string } }) => {
               try {
@@ -835,11 +895,7 @@ export function MapView({
                   <Text variant="headline" color="#FFFFFF" weight="700">
                     {formatStepDistance(navProgress.distanceToNextM || activeStep.distanceM)}
                   </Text>
-                  <View style={styles.roadPill}>
-                    <Text variant="caption" color="#A7F3D0" weight="600" numberOfLines={1} style={{ fontSize: 10 }}>
-                      {roadRoute.source === 'osrm' ? 'Rute Jalan Live' : 'Jalur Arteri Bali'}
-                    </Text>
-                  </View>
+
                 </View>
                 <Text variant="captionMedium" color="#ECFDF5" numberOfLines={1}>
                   {activeStep.instruction}
@@ -856,11 +912,37 @@ export function MapView({
         ) : null}
 
         {/* Selection mode prompt banner */}
-        {selectionMode ? (
+        {editable && onSelectionModeChange ? (
+          <View style={styles.targetSwitch}>
+            <Text variant="caption" color={colors.text.secondary} weight="600" style={{ marginHorizontal: 6 }}>
+              Ketuk peta:
+            </Text>
+            {(['pickup', 'dropoff'] as const).map((t) => {
+              const on = selectionMode === t;
+              const tint = t === 'pickup' ? colors.primary : colors.senja;
+              return (
+                <Pressable
+                  key={t}
+                  onPress={() => onSelectionModeChange(t)}
+                  style={[styles.targetOpt, on && { backgroundColor: tint }]}
+                  hitSlop={4}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  testID={`map-target-${t}`}
+                >
+                  <View style={[styles.targetDot, { backgroundColor: on ? '#FFFFFF' : tint }]} />
+                  <Text variant="caption" weight="700" color={on ? '#FFFFFF' : colors.text.primary}>
+                    {t === 'pickup' ? 'Jemput' : 'Antar'}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : selectionMode ? (
           <View style={styles.selectionBanner} pointerEvents="none">
             <MapPin size={12} color="#FFF" />
             <Text variant="captionMedium" color="#FFF" weight="700" style={{ marginLeft: 5, fontSize: 11 }}>
-              Ketuk peta untuk memindah titik {selectionMode === 'pickup' ? 'jemput' : 'antar'}
+              Ketuk peta untuk menaruh pin
             </Text>
           </View>
         ) : null}
@@ -897,7 +979,11 @@ export function MapView({
         {roadRoute.distanceKm > 0 && !selectedMarker ? (
           <Pressable
             onPress={() => roadRoute.steps.length > 0 && setShowStepsSheet(true)}
-            style={[styles.etaCapsule, isNight && styles.etaCapsuleDark]}
+            style={[
+              styles.etaCapsule,
+              isNight && styles.etaCapsuleDark,
+              !fullscreenSurface && overlayBottomInset ? { bottom: spacing.sm + overlayBottomInset } : null,
+            ]}
           >
             <Clock size={12} color={isNight ? '#34D399' : colors.driver} />
             <Text
@@ -1213,6 +1299,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: radii.md,
+  },
+  targetSwitch: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderRadius: radii.full,
+    padding: 3,
+    ...shadows.card,
+  },
+  targetOpt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radii.full,
+    gap: 5,
+  },
+  targetDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   selectionBanner: {
     position: 'absolute',

@@ -49,7 +49,9 @@ export default function KirimRuteScreen() {
 
   const [pickup, setPickup] = useState<Place>(initialPickup);
   const [dropoff, setDropoff] = useState<Place>(initialDropoff);
-  const [mapSelectionMode, setMapSelectionMode] = useState<'pickup' | 'dropoff' | null>(null);
+  // A tap on the map moves this pin; most people set the destination, so start there.
+  const [mapSelectionMode, setMapSelectionMode] = useState<'pickup' | 'dropoff'>('dropoff');
+  const [pageScroll, setPageScroll] = useState(true);
   const [pickerTarget, setPickerTarget] = useState<'pickup' | 'dropoff' | null>(null);
   const [recipientName, setRecipientName] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
@@ -111,10 +113,10 @@ export default function KirimRuteScreen() {
           </Text>
         </Pressable>
         <Pressable
-          onPress={() => setMapSelectionMode((m) => (m === target ? null : target))}
+          onPress={() => setMapSelectionMode(target)}
           style={[styles.mapPickBtn, picking && styles.mapPickBtnActive]}
           hitSlop={4}
-          accessibilityLabel={isPickup ? 'Pilih titik jemput di peta' : 'Pilih titik antar di peta'}
+          accessibilityLabel={isPickup ? 'Ketuk peta untuk titik jemput' : 'Ketuk peta untuk titik antar'}
         >
           <Crosshair size={18} color={picking ? '#FFFFFF' : colors.primary} />
         </Pressable>
@@ -127,7 +129,7 @@ export default function KirimRuteScreen() {
       <TopBar title="Kirim paket" />
       <StepHeader steps={KIRIM_STEPS} currentStep={1} />
 
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" scrollEnabled={pageScroll}>
         <MapView
           pickup={pickup}
           dropoff={dropoff}
@@ -135,6 +137,9 @@ export default function KirimRuteScreen() {
           showSettings
           style={styles.map}
           selectionMode={mapSelectionMode}
+          onSelectionModeChange={setMapSelectionMode}
+          onInteractionChange={(active) => setPageScroll(!active)}
+          overlayBottomInset={40}
           onSelectLocation={(place, target) => {
             if (target === 'pickup') setPickup(place);
             else setDropoff(place);

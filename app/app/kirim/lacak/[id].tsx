@@ -36,6 +36,7 @@ export default function LacakPesananScreen() {
 
   const { data: order, isLoading, isError, error, refetch, isRefetching } = useOrder(id);
   const { height: screenH } = useWindowDimensions();
+  const [pageScroll, setPageScroll] = React.useState(true);
   const { data: trip } = useTrip(order?.tripId || undefined);
 
   if (isLoading) {
@@ -93,6 +94,7 @@ export default function LacakPesananScreen() {
       />
 
       <ScrollView
+        scrollEnabled={pageScroll}
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl
@@ -115,6 +117,8 @@ export default function LacakPesananScreen() {
             showSettings
             navigationMode={!!driverGps && !isCompleted && !isCancelled}
             allowExpand
+            onInteractionChange={(active) => setPageScroll(!active)}
+          overlayBottomInset={32}
             style={styles.mapHero}
           />
           {driverGps && !isCompleted && !isCancelled ? (
@@ -157,7 +161,7 @@ export default function LacakPesananScreen() {
               <>
                 {order.driver ? (
                   <Button
-                    label="Chat pengemudi"
+                    label="Chat"
                     variant="primary"
                     size="md"
                     leftIcon={<MessageSquare size={16} color="#FFF" />}

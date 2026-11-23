@@ -149,9 +149,9 @@ export function describeCoordinates(lat: number, lng: number): string {
     return nearest.label;
   }
   if (nearest && minKm <= 3.0) {
-    return `Sekitar ${nearest.label.split(',')[0]} (${minKm.toFixed(1)} km)`;
+    return `Dekat ${nearest.label.split(',')[0]}`;
   }
-  return `Titik Peta (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+  return 'Titik pilihan di peta';
 }
 
 /** Interpolate a point t in [0..1] along a polyline */

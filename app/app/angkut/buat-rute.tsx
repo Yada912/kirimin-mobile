@@ -59,7 +59,8 @@ export default function AngkutBuatRuteScreen() {
 
   const { height: screenH } = useWindowDimensions();
   const mapHeight = Math.round(Math.max(260, Math.min(420, screenH * 0.42)));
-  const [mapSelectionMode, setMapSelectionMode] = useState<'pickup' | 'dropoff' | null>(null);
+  const [mapSelectionMode, setMapSelectionMode] = useState<'pickup' | 'dropoff'>('dropoff');
+  const [pageScroll, setPageScroll] = useState(true);
   const [pickerTarget, setPickerTarget] = useState<'origin' | 'destination' | null>(null);
 
   const stopCandidates = useMemo(
@@ -132,7 +133,7 @@ export default function AngkutBuatRuteScreen() {
     <SafeAreaView style={styles.safe}>
       <TopBar title="Pasang rute" />
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} scrollEnabled={pageScroll}>
         {error && (
           <Card variant="flat" padding="md" style={styles.errorCard}>
             <Text variant="callout" color={colors.semantic.danger}>
@@ -149,6 +150,9 @@ export default function AngkutBuatRuteScreen() {
           showSettings
           style={styles.map}
           selectionMode={mapSelectionMode}
+          onSelectionModeChange={setMapSelectionMode}
+          onInteractionChange={(active) => setPageScroll(!active)}
+          overlayBottomInset={40}
           onSelectLocation={(place, target) => {
             if (target === 'pickup') setOrigin(place);
             else setDestination(place);
@@ -182,7 +186,7 @@ export default function AngkutBuatRuteScreen() {
                     </Text>
                   </Pressable>
                   <Pressable
-                    onPress={() => setMapSelectionMode((m) => (m === target ? null : target))}
+                    onPress={() => setMapSelectionMode(target)}
                     style={[styles.mapPickBtn, picking && styles.mapPickBtnActive]}
                     hitSlop={4}
                     accessibilityLabel={isStart ? 'Pilih titik berangkat di peta' : 'Pilih tujuan di peta'}
