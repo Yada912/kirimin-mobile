@@ -198,7 +198,7 @@ export default function RegisterScreen() {
           {step === 1 ? (
             <View>
               <View style={styles.stepBanner}>
-                <BrandLogo size="xs" variant="tile" />
+                <BrandLogo size="xs" tone="kirim" surface="tile" />
                 <View style={{ flex: 1, marginLeft: spacing.sm }}>
                   <Text variant="headline" color={colors.text.primary} weight="700">
                     Buat Akun Baru

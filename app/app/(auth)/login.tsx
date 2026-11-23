@@ -50,8 +50,8 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.banner}>
             <View style={{ flex: 1 }}>
-              <BrandLogo size="md" variant="light" />
-              <Text variant="caption" color="#A1A1AA" style={{ marginTop: 4 }}>
+              <BrandLogo size="md" tone="light" />
+              <Text variant="caption" color="#DBEAFE" style={{ marginTop: 5 }}>
                 Masuk untuk melacak paket atau mulai rute angkutmu.
               </Text>
             </View>
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#09090B',
+    backgroundColor: colors.primary,
     borderRadius: radii.xl,
     padding: spacing.lg,
     marginBottom: spacing.lg,

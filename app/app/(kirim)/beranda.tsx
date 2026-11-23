@@ -62,7 +62,7 @@ export default function KirimBerandaScreen() {
           >
             <Avatar name={user?.name || 'Pengirim'} url={user?.avatarUrl} size={40} />
             <View style={styles.userInfo}>
-              <BrandLogo size="sm" variant="dark" />
+              <BrandLogo size="sm" tone="kirim" />
               <Text variant="captionMedium" color={colors.text.secondary} style={{ marginTop: 1 }}>
                 Halo, {user?.name || 'Pengguna'}
               </Text>

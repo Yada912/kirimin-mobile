@@ -12,9 +12,9 @@ export default function WelcomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topSection}>
-        {/* Minimal Uber-style Brand Bar */}
+        {/* Vibrant App-Native Brand Bar */}
         <View style={styles.brandHeaderRow}>
-          <BrandLogo size="md" variant="tile" testID="welcome-brand-logo" />
+          <BrandLogo size="sm" tone="brand" surface="soft" testID="welcome-brand-logo" />
           <View style={styles.badgeRow}>
             <Sparkles size={12} color={colors.primary} />
             <Text variant="captionMedium" color={colors.primary} weight="700" style={{ marginLeft: 4 }}>
@@ -28,7 +28,7 @@ export default function WelcomeScreen() {
           <WelcomeHeroArt width={330} height={164} />
         </View>
 
-        <BrandLogo size="xl" variant="dark" style={{ marginTop: 2 }} />
+        <BrandLogo size="xl" tone="brand" style={{ marginTop: 2 }} />
         <Text variant="callout" color={colors.text.secondary} align="center" style={styles.tagline}>
           Titip paket ke pengendara yang sudah searah perjalanan. Lebih hemat, cepat, dengan navigasi jalan live.
         </Text>

@@ -1,13 +1,25 @@
 import React from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import Svg, { Path, Polygon, Rect } from 'react-native-svg';
+import { colors } from '../theme/tokens';
 
 export type BrandLogoSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-export type BrandLogoVariant = 'dark' | 'light' | 'tile';
+export type BrandLogoTone = 'brand' | 'kirim' | 'angkut' | 'light' | 'dark' | 'sunset';
+export type BrandLogoSurface = 'plain' | 'tile' | 'soft';
 
 export interface BrandLogoProps {
   size?: BrandLogoSize;
-  variant?: BrandLogoVariant;
+  /** Semantic color palette that adapts to Kirim (cobalt), Angkut (emerald), Brand (dual), etc. */
+  tone?: BrandLogoTone;
+  /** Container treatment: bare wordmark, solid colored badge tile, or soft tinted pill. */
+  surface?: BrandLogoSurface;
+  /** Backwards-compatible shorthand for surface/tone */
+  variant?: 'dark' | 'light' | 'tile';
+  /** Direct color overrides for any custom usage */
+  boldColor?: string;
+  lightColor?: string;
+  backgroundColor?: string;
+  borderColor?: string;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
@@ -17,40 +29,111 @@ const SIZE_METRICS: Record<
   BrandLogoSize,
   {
     height: number;
-    tilePadH: number;
-    tilePadV: number;
-    tileRadius: number;
+    padH: number;
+    padV: number;
+    radius: number;
   }
 > = {
-  xs: { height: 15, tilePadH: 7, tilePadV: 4, tileRadius: 6 },
-  sm: { height: 21, tilePadH: 9, tilePadV: 5, tileRadius: 8 },
-  md: { height: 26, tilePadH: 12, tilePadV: 6, tileRadius: 10 },
-  lg: { height: 34, tilePadH: 15, tilePadV: 8, tileRadius: 12 },
-  xl: { height: 42, tilePadH: 18, tilePadV: 10, tileRadius: 14 },
+  xs: { height: 15, padH: 8, padV: 4, radius: 8 },
+  sm: { height: 21, padH: 10, padV: 5, radius: 10 },
+  md: { height: 26, padH: 13, padV: 7, radius: 12 },
+  lg: { height: 34, padH: 16, padV: 9, radius: 14 },
+  xl: { height: 42, padH: 20, padV: 11, radius: 16 },
+};
+
+interface TonePalette {
+  plain: { bold: string; light: string };
+  tile: { bg: string; bold: string; light: string };
+  soft: { bg: string; border: string; bold: string; light: string };
+}
+
+const TONE_PALETTES: Record<BrandLogoTone, TonePalette> = {
+  // Signature dual identity: Cobalt "KIRIM" + Emerald/Teal "IN"
+  brand: {
+    plain: { bold: colors.primary, light: colors.driver },
+    tile: { bg: colors.primary, bold: '#FFFFFF', light: '#A7F3D0' },
+    soft: { bg: colors.primarySubtle, border: '#BFDBFE', bold: colors.primaryDeep, light: colors.driver },
+  },
+  // Sender (Kirim) Cobalt palette
+  kirim: {
+    plain: { bold: colors.primaryDeep, light: '#3B82F6' },
+    tile: { bg: colors.primary, bold: '#FFFFFF', light: '#BFDBFE' },
+    soft: { bg: colors.primaryLight, border: '#BFDBFE', bold: colors.primaryDeep, light: colors.primary },
+  },
+  // Driver (Angkut) Emerald palette
+  angkut: {
+    plain: { bold: colors.driverDeep, light: '#10B981' },
+    tile: { bg: colors.driver, bold: '#FFFFFF', light: '#A7F3D0' },
+    soft: { bg: colors.driverSubtle, border: colors.driverLight, bold: colors.driverDeep, light: colors.driver },
+  },
+  // Crisp white for placing on vibrant colored hero banners
+  light: {
+    plain: { bold: '#FFFFFF', light: 'rgba(255, 255, 255, 0.78)' },
+    tile: { bg: 'rgba(255, 255, 255, 0.18)', bold: '#FFFFFF', light: 'rgba(255, 255, 255, 0.82)' },
+    soft: { bg: 'rgba(255, 255, 255, 0.14)', border: 'rgba(255, 255, 255, 0.28)', bold: '#FFFFFF', light: 'rgba(255, 255, 255, 0.8)' },
+  },
+  // Clean deep slate monochrome
+  dark: {
+    plain: { bold: colors.text.primary, light: colors.text.secondary },
+    tile: { bg: colors.text.primary, bold: '#FFFFFF', light: '#CBD5E1' },
+    soft: { bg: '#F1F5F9', border: colors.border, bold: colors.text.primary, light: colors.text.secondary },
+  },
+  // Warm Bali sunset amber/coral accent for promos & highlights
+  sunset: {
+    plain: { bold: '#EA580C', light: '#F59E0B' },
+    tile: { bg: '#EA580C', bold: '#FFFFFF', light: '#FDE68A' },
+    soft: { bg: '#FFF7ED', border: '#FED7AA', bold: '#C2410C', light: '#F59E0B' },
+  },
 };
 
 /**
- * Custom geometric Uber-inspired KIRIMIN vector wordmark:
+ * Adaptive geometric Uber-inspired KIRIMIN vector wordmark:
  * heavy bold "KIRIM" paired with sleek light "IN".
- * Uses exact vector geometry so weight contrast is identical across iOS, Android, and Web.
+ * Automatically adapts to Kirim (cobalt), Angkut (emerald), dual Brand, or any custom colors.
  */
 export function BrandLogo({
   size = 'md',
-  variant = 'dark',
+  tone,
+  surface,
+  variant,
+  boldColor,
+  lightColor,
+  backgroundColor,
+  borderColor,
   style,
   testID,
 }: BrandLogoProps) {
+  // Resolve legacy `variant` if explicit tone/surface were not supplied
+  const resolvedTone: BrandLogoTone =
+    tone ?? (variant === 'light' ? 'light' : variant === 'dark' ? 'dark' : 'brand');
+  const resolvedSurface: BrandLogoSurface =
+    surface ?? (variant === 'tile' ? 'tile' : 'plain');
+
   const m = SIZE_METRICS[size];
   const width = Math.round((m.height * 222) / 64);
-  const isTile = variant === 'tile';
+  const palette = TONE_PALETTES[resolvedTone];
 
-  const boldFill = variant === 'dark' ? '#09090B' : '#FFFFFF';
-  const lightFill =
-    variant === 'dark'
-      ? '#27272A'
-      : variant === 'tile'
-        ? '#D4D4D8'
-        : 'rgba(255,255,255,0.88)';
+  let boldFill = palette.plain.bold;
+  let lightFill = palette.plain.light;
+  let containerBg: string | undefined;
+  let containerBorder: string | undefined;
+
+  if (resolvedSurface === 'tile') {
+    boldFill = palette.tile.bold;
+    lightFill = palette.tile.light;
+    containerBg = palette.tile.bg;
+  } else if (resolvedSurface === 'soft') {
+    boldFill = palette.soft.bold;
+    lightFill = palette.soft.light;
+    containerBg = palette.soft.bg;
+    containerBorder = palette.soft.border;
+  }
+
+  // Apply explicit custom color overrides when provided
+  if (boldColor) boldFill = boldColor;
+  if (lightColor) lightFill = lightColor;
+  if (backgroundColor) containerBg = backgroundColor;
+  if (borderColor) containerBorder = borderColor;
 
   const svg = (
     <Svg
@@ -60,12 +143,12 @@ export function BrandLogo({
       accessibilityLabel="KIRIMIN"
     >
       {/* K (bold) */}
-      <Rect x="6" y="10" width="8.6" height="44" fill={boldFill} />
+      <Rect x="6" y="10" width="8.6" height="44" rx="1.2" fill={boldFill} />
       <Polygon points="14.2,29.5 29.5,10 39.8,10 22.8,31.4 14.2,37.8" fill={boldFill} />
       <Polygon points="18.8,26.8 40.4,54 30.0,54 14.2,34.2" fill={boldFill} />
 
       {/* I (bold) */}
-      <Rect x="46.5" y="10" width="8.6" height="44" fill={boldFill} />
+      <Rect x="46.5" y="10" width="8.6" height="44" rx="1.2" fill={boldFill} />
 
       {/* R (bold) */}
       <Path
@@ -75,7 +158,7 @@ export function BrandLogo({
       />
 
       {/* I (bold) */}
-      <Rect x="103.5" y="10" width="8.6" height="44" fill={boldFill} />
+      <Rect x="103.5" y="10" width="8.6" height="44" rx="1.2" fill={boldFill} />
 
       {/* M (bold) */}
       <Polygon
@@ -84,27 +167,30 @@ export function BrandLogo({
       />
 
       {/* I (light) */}
-      <Rect x="174.5" y="10" width="3.1" height="44" fill={lightFill} />
+      <Rect x="174.5" y="10" width="3.2" height="44" rx="0.8" fill={lightFill} />
 
       {/* N (light) */}
-      <Rect x="186.5" y="10" width="3.1" height="44" fill={lightFill} />
-      <Rect x="212.4" y="10" width="3.1" height="44" fill={lightFill} />
-      <Polygon points="186.5,10 189.9,10 215.5,54 212.1,54" fill={lightFill} />
+      <Rect x="186.5" y="10" width="3.2" height="44" rx="0.8" fill={lightFill} />
+      <Rect x="212.3" y="10" width="3.2" height="44" rx="0.8" fill={lightFill} />
+      <Polygon points="186.5,10 190.0,10 215.5,54 212.0,54" fill={lightFill} />
     </Svg>
   );
 
-  if (isTile) {
+  if (resolvedSurface !== 'plain' || containerBg) {
     return (
       <View
         testID={testID}
         accessibilityRole="image"
         accessibilityLabel="KIRIMIN"
         style={[
-          styles.tile,
+          styles.container,
           {
-            paddingHorizontal: m.tilePadH,
-            paddingVertical: m.tilePadV,
-            borderRadius: m.tileRadius,
+            backgroundColor: containerBg,
+            paddingHorizontal: m.padH,
+            paddingVertical: m.padV,
+            borderRadius: m.radius,
+            borderWidth: containerBorder ? 1 : 0,
+            borderColor: containerBorder,
           },
           style,
         ]}
@@ -131,8 +217,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  tile: {
-    backgroundColor: '#09090B',
+  container: {
     alignSelf: 'flex-start',
     alignItems: 'center',
     justifyContent: 'center',

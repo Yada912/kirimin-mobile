@@ -211,7 +211,7 @@ export default function BayarScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <Card variant="elevated" padding="xl" style={styles.receiptCard}>
             <View style={{ alignItems: 'center', marginBottom: spacing.md }}>
-              <BrandLogo size="sm" variant="tile" style={{ alignSelf: 'center', marginBottom: spacing.sm }} />
+              <BrandLogo size="sm" tone="angkut" surface="soft" style={{ alignSelf: 'center', marginBottom: spacing.sm }} />
               <HandoverSparkArt width={76} height={76} />
               <View style={styles.verifiedBadge}>
                 <ShieldCheck size={13} color={colors.driverDeep} />
@@ -594,7 +594,7 @@ export default function BayarScreen() {
         <View style={styles.totalHero}>
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <BrandLogo size="xs" variant="light" />
+              <BrandLogo size="xs" tone="light" />
               <Text variant="caption" color="#DBEAFE">
                 • Total Tagihan
               </Text>

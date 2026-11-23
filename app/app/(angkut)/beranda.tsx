@@ -47,7 +47,7 @@ export default function AngkutBerandaScreen() {
           <Pressable onPress={() => router.push('/(angkut)/profil')} style={styles.userRow}>
             <Avatar name={user?.name || 'Driver'} url={user?.avatarUrl} size={40} />
             <View style={styles.userInfo}>
-              <BrandLogo size="sm" variant="dark" />
+              <BrandLogo size="sm" tone="angkut" />
               <Text variant="captionMedium" color={colors.text.secondary} style={{ marginTop: 1 }}>
                 {user?.name || 'Driver'} • {user?.vehicle?.plate || 'Siap Jalan'}
               </Text>

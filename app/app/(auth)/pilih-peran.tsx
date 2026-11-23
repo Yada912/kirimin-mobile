@@ -35,7 +35,11 @@ export default function PilihPeranScreen() {
       <TopBar title="Pilih Peran Anda" canGoBack={false} />
       <View style={styles.container}>
         <View style={styles.header}>
-          <BrandLogo size="lg" variant="dark" style={{ alignSelf: 'center', marginBottom: spacing.xs }} />
+          <BrandLogo
+            size="lg"
+            tone={selectedRole === 'driver' ? 'angkut' : 'kirim'}
+            style={{ alignSelf: 'center', marginBottom: spacing.xs }}
+          />
           <Text variant="title" color={colors.text.primary} weight="700" align="center">
             Mau melakukan apa hari ini?
           </Text>
