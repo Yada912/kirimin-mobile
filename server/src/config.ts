@@ -56,6 +56,15 @@ export const config = {
    * for demos. Set to false to keep them "pending" until reviewed in the database.
    */
   autoApproveVerification: (env.AUTO_APPROVE_VERIFICATION ?? 'true') === 'true',
+  /**
+   * Payment gateway provider: 'mock_gateway' (realistic sandbox with signed webhooks),
+   * or swap to 'midtrans' / 'xendit' in production.
+   */
+  paymentGateway: (env.PAYMENT_GATEWAY ?? 'mock_gateway') as 'mock_gateway' | 'midtrans' | 'xendit',
+  /** Secret used to verify incoming payment gateway webhook SHA-512 signatures. */
+  paymentWebhookSecret: env.PAYMENT_WEBHOOK_SECRET ?? 'kirimin-sandbox-webhook-secret',
+  midtransServerKey: env.MIDTRANS_SERVER_KEY || null,
+  xenditSecretKey: env.XENDIT_SECRET_KEY || null,
 };
 
 if (isProd && config.jwtSecret === DEV_SECRET) {

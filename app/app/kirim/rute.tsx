@@ -39,10 +39,25 @@ export default function KirimRuteScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
+  const parsePlaceParam = (raw: unknown): Place | undefined => {
+    if (typeof raw !== 'string' || !raw.trim()) return undefined;
+    try {
+      const p = JSON.parse(raw);
+      if (p && typeof p.lat === 'number' && typeof p.lng === 'number' && p.label) return p;
+    } catch {
+      // ignore
+    }
+    return undefined;
+  };
+
   const initialPickup =
-    findPlaceByPreset(params.pickupPreset as string) || PLACE_BY_ID.tukad_badung;
+    parsePlaceParam(params.pickupJson) ||
+    findPlaceByPreset(params.pickupPreset as string) ||
+    PLACE_BY_ID.tukad_badung;
   const initialDropoff =
-    findPlaceByPreset(params.dropoffPreset as string) || PLACE_BY_ID.gedung_ft;
+    parsePlaceParam(params.dropoffJson) ||
+    findPlaceByPreset(params.dropoffPreset as string) ||
+    PLACE_BY_ID.gedung_ft;
 
   const [pickup, setPickup] = useState<Place>(initialPickup);
   const [dropoff, setDropoff] = useState<Place>(initialDropoff);

@@ -2,7 +2,16 @@ import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bike, ShieldCheck, HelpCircle, FileText, LogOut } from 'lucide-react-native';
+import {
+  Bike,
+  ShieldCheck,
+  HelpCircle,
+  FileText,
+  LogOut,
+  SlidersHorizontal,
+  Bookmark,
+  UserCog,
+} from 'lucide-react-native';
 import { colors, radii, spacing } from '../../src/theme/tokens';
 import {
   Text,
@@ -117,6 +126,30 @@ export default function KirimProfilScreen() {
 
         {/* Menu Section */}
         <View style={styles.menuCard}>
+          <ListItem
+            title="Edit Profil, Kendaraan & Notifikasi"
+            subtitle="Ubah nama, email, verifikasi KTP, & notifikasi"
+            leftIcon={<UserCog size={22} color={colors.primary} />}
+            onPress={() => router.push('/kelola/profil')}
+            showChevron
+          />
+          <Divider />
+          <ListItem
+            title="Kelola Preset Rute Cepat"
+            subtitle="Tambah, ubah, atau beri warna rute favorit"
+            leftIcon={<SlidersHorizontal size={22} color={colors.accent.coral} />}
+            onPress={() => router.push('/kelola/preset')}
+            showChevron
+          />
+          <Divider />
+          <ListItem
+            title="Lokasi Tersimpan Saya"
+            subtitle="Simpan alamat rumah, kos, kantor, & kampus"
+            leftIcon={<Bookmark size={22} color={colors.accent.violet} />}
+            onPress={() => router.push('/kelola/lokasi')}
+            showChevron
+          />
+          <Divider />
           <ListItem
             title="Bantuan & Pusat Informasi"
             subtitle="Pertanyaan umum seputar pengiriman"

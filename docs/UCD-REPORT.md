@@ -97,3 +97,42 @@ Mengubah aplikasi Expo ini menjadi file **`.apk`** (melalui **EAS Build** `eas b
    - **Peta & Geocoding**: Saat ini `MapView` sudah tangguh (OSM + Carto + Vector offline fallback). Untuk skala produksi tinggi, pertimbangkan tile server komersial atau Mapbox/Google Maps SDK agar tidak terkena rate-limit tile publik OpenStreetMap, serta integrasi geocoding API untuk pencarian alamat jalan yang lebih detail di luar 12 preset Bali.
    - **Pembayaran Nyata**: Layar pembayaran saat ini adalah simulasi UX lengkap (QRIS/E-Wallet/VA). Untuk transaksi uang asli, perlu dihubungkan ke payment gateway (seperti Midtrans / Xendit) di `server/` untuk membuat *Snap/QR string* dinamis dan webhook verifikasi otomatis.
    - **Notifikasi Push**: Di APK standalone, `expo-notifications` memerlukan konfigurasi **Firebase Cloud Messaging (FCM)** (`google-services.json`) agar notifikasi tetap masuk saat aplikasi ditutup.
+
+---
+
+## 6. UCD Iterasi 2 — Peta Navigasi Jalan Nyata, Kustomisasi Penuh, & Loop Pengujian Visual
+
+### A. Peningkatan Peta & Navigasi Driver (Terinspirasi Apple Maps, Google Maps, Gojek & Uber)
+1. **Rute Jalan Nyata (`app/src/utils/routing.ts`)**:
+   - Mengganti garis lurus putus-putus dengan rute jalan nyata melalui OSRM (*Open Source Routing Machine*) lengkap dengan fallback otomatis **Graf Jalan Arteri Bali Selatan** (Jl. Tukad Badung, Jl. Raya Sesetan, Jl. Bypass Ngurah Rai, Simpang Dewa Ruci, Jl. Raya Uluwatu, Jimbaran, Kampus Bukit, Nusa Dua).
+   - Mendukung pemisahan segmen rute yang sudah dilalui (abu-abu lembut) dan sisa rute di depan (biru navigasi dengan tepi putih), bearing arah panah driver, serta perhitungan ETA & jarak sisa secara live.
+2. **HUD Navigasi Interaktif (`app/src/ui/MapView.tsx`)**:
+   - Banner panduan belokan (*turn-by-turn*) bergaya Apple/Google Maps di atas peta lengkap dengan drawer **Panduan Rute Jalan** (ketuk langkah mana saja untuk memfokuskan peta ke persimpangan tersebut).
+   - 4 tema peta bebas API key: *Peta Bersih (Nav)*, *Peta Jalan Detail (OSM)*, *Mode Malam (Driver)*, dan *Vektor Offline*.
+   - Mode layar penuh (*Fullscreen Map*), kartu info cepat saat pin diketuk, dan auto-follow driver yang otomatis jeda ketika pengguna menggeser peta.
+3. **Layout Map-First & Thumb-Reach**:
+   - Layar Perjalanan Aktif Driver (`app/app/angkut/jalan/[tripId].tsx`) dan Lacak Pesanan (`app/app/kirim/lacak/[id].tsx`) menampilkan peta navigasi besar di bagian atas dan tombol aksi utama langsung di jangkauan ibu jari tanpa perlu menggulir.
+
+### B. Tampilan Lebih Berwarna, Ilustrasi Vektor, Kustomisasi, & Onboarding 3 Langkah
+- **Identitas Warna Peran**: Biru Kobalt (`#1463F3`) untuk mode **Kirim** dan Hijau Zamrud (`#059669`) untuk mode **Angkut (Driver)**.
+- **Ilustrasi Vektor Kustom (`app/src/ui/Illustrations.tsx`)**: Banner skuter komuter Bali, ilustrasi peta rute driver, hero selamat datang, dan perisai serah terima 4 digit.
+- **Kustomisasi Penuh**:
+  - **Kelola Preset Rute (`app/app/kelola/preset.tsx`)**: Tambah, edit, beri warna, hapus, dan gunakan preset rute cepat 1-ketuk (tersimpan permanen di `/me/settings`).
+  - **Lokasi Tersimpan (`app/app/kelola/lokasi.tsx`)**: Kelola alamat Rumah/Kantor/Kampus/Lainnya dengan tunjuk pin langsung di peta (`/me/places`), langsung muncul di bagian atas `PlacePickerSheet`.
+  - **Edit Profil, Kendaraan & Notifikasi (`app/app/kelola/profil.tsx`)** dan **Edit Rute Driver (`app/app/angkut/edit-rute/[tripId].tsx`)**.
+- **Onboarding Pengguna Baru 3 Langkah (`app/app/(auth)/register.tsx`)**: Data akun + indikator kekuatan sandi → Pilihan peran & kendaraan driver → Pin lokasi favorit pertama di peta.
+
+### C. Temuan & Perbaikan dari Loop Pengujian Visual (Playwright Mobile `390×844`)
+Selama pengujian end-to-end visual pada 5 alur utama, ditemukan dan langsung diperbaiki 4 isu UX nyata:
+1. **Watermark API Key Tile Carto**: Endpoint tile publik Carto menampilkan teks `API KEY REQUIRED`. Diperbaiki dengan tile OSM gratis + filter CSS khusus untuk *Peta Bersih* dan *Mode Malam (Driver)*.
+2. **Pemotongan Label Bottom Tab Bar**: Label tab bawah terpotong di viewport mobile web (`height: 60`). Diperbaiki menjadi `height: 74` dengan `paddingBottom: 14`.
+3. **Kepadatan Kontrol pada Mini-Map**: Tombol zoom `-` hampir terpotong pada peta setinggi 180px. Diperbaiki dengan menyembunyikan tombol `+/-` pada mini-map dan menampilkannya pada peta besar/layar penuh.
+4. **Overflow `StatusPill` pada Kartu Lacak**: Label status panjang menekan sisi kanan kartu. Diperbaiki dengan `flex: 1` dan `numberOfLines={1}` pada kolom alamat kiri.
+
+### D. Video Demo Alur Aplikasi (`docs/demos/`)
+1. `docs/demos/01_onboarding_new_user.mp4` — Registrasi 3 langkah pengguna baru & setup kendaraan/lokasi favorit
+2. `docs/demos/02_sender_kirim_flow.mp4` — Alur pengirim lengkap (Beranda → Paket → Peta Rute & Place Picker → Driver → QRIS → Lacak Live)
+3. `docs/demos/03_driver_angkut_navigation.mp4` — Alur driver (Permintaan → Navigasi Jalan Live, Panduan Belokan, Mode Malam, Konfirmasi Jemput)
+4. `docs/demos/04_handover_and_rating.mp4` — Serah terima kode rahasia 4 digit → Selesai perjalanan → Penilaian 5 bintang
+5. `docs/demos/05_customization_and_editing.mp4` — Kustomisasi preset rute, lokasi peta tersimpan, edit profil/kendaraan, & edit rute driver
+

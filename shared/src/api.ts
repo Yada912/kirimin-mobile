@@ -9,8 +9,11 @@ import type {
   HandoverMethod,
   OrderStatus,
   PackageSize,
+  PaymentChannel,
+  PaymentGatewayName,
   PaymentMethod,
   PaymentStatus,
+  PaymentTransactionStatus,
   NotificationChannel,
   PayoutMethod,
   Place,
@@ -48,10 +51,24 @@ export interface PublicUser {
   vehicle: Vehicle | null;
 }
 
-/** Per-user preferences (ST screens). */
+/** Customizable route shortcut preset saved per user. */
+export interface RoutePreset {
+  id: string;
+  name: string;
+  subtitle?: string;
+  pickup: Place;
+  dropoff: Place;
+  defaultSize?: PackageSize;
+  defaultCategory?: Category;
+  color?: string;
+}
+
+/** Per-user preferences (ST screens + custom route presets). */
 export interface UserSettings {
   /** Push notifications per channel; in-app notifications (O5) are always stored. */
   push: Record<NotificationChannel, boolean>;
+  /** Custom route presets shown on home screen for 1-tap kirim/angkut. */
+  routePresets?: RoutePreset[];
 }
 
 /** The signed-in user (GET /me). */
@@ -204,12 +221,48 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface PaymentInstructions {
+  /** Authentic EMVCo-formatted QRIS payload string (for QRIS method). */
+  qrString?: string;
+  /** Bank Virtual Account number (for bank_va method). */
+  vaNumber?: string;
+  /** Account holder displayed on ATM/M-Banking transfer screen. */
+  accountName?: string;
+  /** Deep link scheme for Indonesian e-wallet apps (gopay/dana/ovo/shopeepay). */
+  deepLinkUrl?: string;
+  /** Hosted sandbox/gateway checkout reference URL. */
+  checkoutUrl?: string;
+  /** Step-by-step localized payment instructions for the user. */
+  steps: string[];
+}
+
+/** A real payment gateway charge/intent record (Mock Sandbox / Midtrans / Xendit). */
+export interface PaymentTransaction {
+  id: string;
+  orderId: string;
+  orderCode: string;
+  gateway: PaymentGatewayName;
+  gatewayRef: string;
+  idempotencyKey: string | null;
+  method: PaymentMethod;
+  channel: PaymentChannel;
+  amount: number;
+  status: PaymentTransactionStatus;
+  instructions: PaymentInstructions;
+  expiresAt: string;
+  paidAt: string | null;
+  isSandbox: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Server-sent events pushed on GET /events. */
 export type RealtimeEvent =
   | { type: 'order.updated'; order: Order }
   | { type: 'message.created'; message: ChatMessage }
   | { type: 'notification.created'; notification: Notification }
-  | { type: 'trip.location'; tripId: string; lat: number; lng: number; at: string };
+  | { type: 'trip.location'; tripId: string; lat: number; lng: number; at: string }
+  | { type: 'payment.updated'; payment: PaymentTransaction };
 
 /** S9 / D10 "Laporkan masalah". */
 export interface Report {

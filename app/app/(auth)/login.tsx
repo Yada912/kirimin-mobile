@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, View, ScrollView, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, spacing } from '../../src/theme/tokens';
-import { Text, TopBar, TextField, Button, Card } from '../../src/ui';
+import { Phone, Lock, Package, Bike, Sparkles } from 'lucide-react-native';
+import { colors, radii, spacing } from '../../src/theme/tokens';
+import { Text, TopBar, TextField, Button, Card, BrandLogo } from '../../src/ui';
 import { useAuth } from '../../src/auth/AuthContext';
 
 export default function LoginScreen() {
@@ -15,12 +16,14 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async () => {
-    if (!phone.trim()) {
+  const handleSubmit = async (overridePhone?: string, overridePassword?: string) => {
+    const p = (overridePhone ?? phone).trim();
+    const pw = overridePassword ?? password;
+    if (!p) {
       setError('Nomor HP wajib diisi');
       return;
     }
-    if (!password) {
+    if (!pw) {
       setError('Kata sandi wajib diisi');
       return;
     }
@@ -28,7 +31,7 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       setError(null);
-      await login(phone.trim(), password);
+      await login(p, pw);
       router.replace('/');
     } catch (err: any) {
       setError(err.message || 'Gagal masuk. Periksa nomor HP dan kata sandi Anda.');
@@ -39,18 +42,21 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <TopBar title="Masuk ke Kirimin" />
+      <TopBar title="Masuk" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
       >
         <ScrollView contentContainerStyle={styles.content}>
-          <Text variant="title" color={colors.text.primary} weight="700" style={styles.heading}>
-            Selamat Datang Kembali
-          </Text>
-          <Text variant="callout" color={colors.text.secondary} style={styles.subheading}>
-            Masukkan nomor HP dan kata sandi akun Kirimin Anda.
-          </Text>
+          <View style={styles.banner}>
+            <View style={{ flex: 1 }}>
+              <BrandLogo size="md" variant="light" />
+              <Text variant="caption" color="#A1A1AA" style={{ marginTop: 4 }}>
+                Masuk untuk melacak paket atau mulai rute angkutmu.
+              </Text>
+            </View>
+            <Sparkles size={20} color="#FDE047" />
+          </View>
 
           {error && (
             <Card variant="flat" padding="md" style={styles.errorCard}>
@@ -62,7 +68,7 @@ export default function LoginScreen() {
 
           <TextField
             label="Nomor Handphone"
-            placeholder="Contoh: 081234567890"
+            placeholder="Contoh: 081200000001"
             value={phone}
             onChangeText={(t) => {
               setPhone(t);
@@ -70,6 +76,7 @@ export default function LoginScreen() {
             }}
             keyboardType="phone-pad"
             autoCapitalize="none"
+            leftElement={<Phone size={17} color={colors.text.muted} />}
           />
 
           <TextField
@@ -81,6 +88,7 @@ export default function LoginScreen() {
               setError(null);
             }}
             secureTextEntry
+            leftElement={<Lock size={17} color={colors.text.muted} />}
           />
 
           <Button
@@ -88,9 +96,45 @@ export default function LoginScreen() {
             variant="primary"
             size="lg"
             loading={loading}
-            onPress={handleSubmit}
+            onPress={() => handleSubmit()}
             style={styles.submitBtn}
           />
+
+          {/* Quick Demo Accounts Strip for effortless testing */}
+          <Card variant="flat" padding="md" style={styles.demoCard}>
+            <Text variant="captionMedium" color={colors.text.secondary} weight="700" style={{ marginBottom: spacing.xs }}>
+              Akses Cepat Akun Demo (Bali)
+            </Text>
+            <View style={styles.demoRow}>
+              <Pressable
+                onPress={() => {
+                  setPhone('081200000001');
+                  setPassword('kirimin123');
+                  handleSubmit('081200000001', 'kirimin123');
+                }}
+                style={[styles.demoPill, { backgroundColor: colors.primaryLight }]}
+              >
+                <Package size={14} color={colors.primary} />
+                <Text variant="captionMedium" color={colors.primary} weight="700" style={{ marginLeft: 5 }}>
+                  Wayan (Pengirim)
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  setPhone('081200000003');
+                  setPassword('kirimin123');
+                  handleSubmit('081200000003', 'kirimin123');
+                }}
+                style={[styles.demoPill, { backgroundColor: colors.driverLight }]}
+              >
+                <Bike size={14} color={colors.driverDeep} />
+                <Text variant="captionMedium" color={colors.driverDeep} weight="700" style={{ marginLeft: 5 }}>
+                  Made S. (Driver)
+                </Text>
+              </Pressable>
+            </View>
+          </Card>
 
           <View style={styles.registerLink}>
             <Text variant="callout" color={colors.text.secondary}>
@@ -119,25 +163,45 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: spacing.xl,
+    padding: spacing.lg,
   },
-  heading: {
-    marginBottom: spacing.xs,
-  },
-  subheading: {
-    marginBottom: spacing.xl,
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#09090B',
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
   },
   errorCard: {
     backgroundColor: colors.semantic.dangerLight,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   submitBtn: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
+  },
+  demoCard: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  demoRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  demoPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: radii.md,
   },
   registerLink: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
   },
 });

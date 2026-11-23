@@ -143,13 +143,62 @@ export const TRACKING_STEPS: OrderStatus[] = ['accepted', 'picked_up', 'in_trans
 export const ACTIVE_ORDER_STATUSES: OrderStatus[] = ['accepted', 'picked_up', 'in_transit', 'arrived'];
 export const FINAL_ORDER_STATUSES: OrderStatus[] = ['delivered', 'cancelled', 'expired'];
 
-// ─── Payments (mocked for the MVP) ─────────────────────────────────────────
+// ─── Payments (Gateway-ready: Mock Sandbox / Midtrans / Xendit) ──────────────
 
 export const PAYMENT_METHODS = ['cash', 'qris', 'ewallet', 'bank_va'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export const PAYMENT_STATUSES = ['unpaid', 'paid', 'refunded', 'partially_refunded'] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+export const PAYMENT_TX_STATUSES = [
+  'pending',
+  'settlement',
+  'expired',
+  'failed',
+  'cancelled',
+  'refunded',
+] as const;
+export type PaymentTransactionStatus = (typeof PAYMENT_TX_STATUSES)[number];
+
+export const PAYMENT_TX_LABELS: Record<PaymentTransactionStatus, string> = {
+  pending: 'Menunggu Pembayaran',
+  settlement: 'Lunas (Terverifikasi)',
+  expired: 'Kedaluwarsa',
+  failed: 'Gagal',
+  cancelled: 'Dibatalkan',
+  refunded: 'Dikembalikan',
+};
+
+export const PAYMENT_CHANNELS = [
+  'cash',
+  'qris',
+  'gopay',
+  'shopeepay',
+  'dana',
+  'ovo',
+  'bca',
+  'mandiri',
+  'bni',
+  'bri',
+] as const;
+export type PaymentChannel = (typeof PAYMENT_CHANNELS)[number];
+
+export const PAYMENT_CHANNEL_LABELS: Record<PaymentChannel, string> = {
+  cash: 'Tunai ke Driver',
+  qris: 'QRIS (Semua E-Wallet & Bank)',
+  gopay: 'GoPay',
+  shopeepay: 'ShopeePay',
+  dana: 'DANA',
+  ovo: 'OVO',
+  bca: 'BCA Virtual Account',
+  mandiri: 'Mandiri Virtual Account',
+  bni: 'BNI Virtual Account',
+  bri: 'BRI Virtual Account',
+};
+
+export const PAYMENT_GATEWAYS = ['mock_gateway', 'midtrans', 'xendit'] as const;
+export type PaymentGatewayName = (typeof PAYMENT_GATEWAYS)[number];
 
 // ─── Account (O1, X4, ST) ───────────────────────────────────────────────────
 

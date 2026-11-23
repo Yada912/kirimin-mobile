@@ -131,9 +131,36 @@ export default function AngkutRuteScreen() {
                 <Text variant="callout" color={colors.text.secondary}>
                   Kapasitas: <Text variant="calloutSemibold">{item.slotsUsed}/{item.maxPackages} paket</Text>
                 </Text>
-                <Text variant="callout" color={colors.primary} weight="600">
-                  {item.status === 'ongoing' ? 'Buka Perjalanan →' : 'Lihat Permintaan →'}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  {item.status === 'published' && (
+                    <Button
+                      label="Edit"
+                      variant="outline"
+                      size="sm"
+                      fullWidth={false}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/angkut/edit-rute/[tripId]',
+                          params: { tripId: item.id },
+                        })
+                      }
+                    />
+                  )}
+                  <Button
+                    label={item.status === 'ongoing' ? 'Navigasi' : 'Permintaan'}
+                    variant="primary"
+                    size="sm"
+                    fullWidth={false}
+                    onPress={() => {
+                      if (item.status === 'ongoing') {
+                        router.push({ pathname: '/angkut/jalan/[tripId]', params: { tripId: item.id } });
+                      } else {
+                        router.push({ pathname: '/angkut/permintaan/[tripId]', params: { tripId: item.id } });
+                      }
+                    }}
+                    style={{ backgroundColor: colors.driver }}
+                  />
+                </View>
               </View>
             </Card>
           )}

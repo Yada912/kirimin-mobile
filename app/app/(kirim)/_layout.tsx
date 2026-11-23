@@ -17,12 +17,13 @@ export default function KirimTabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.borderLight,
-          height: 60,
-          paddingBottom: 8,
+          height: 74,
+          paddingBottom: 14,
           paddingTop: 6,
         },
         tabBarLabelStyle: {
           ...typography.captionMedium,
+          marginTop: 2,
         },
       }}
     >

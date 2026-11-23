@@ -34,8 +34,15 @@ export default function KirimPaketScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  const [category, setCategory] = useState<Category>('Dokumen');
-  const [size, setSize] = useState<PackageSize>('XS');
+  const initialCat = CATEGORIES.includes(params.categoryPreset as Category)
+    ? (params.categoryPreset as Category)
+    : 'Dokumen';
+  const initialSize = PACKAGE_SIZES.includes(params.sizePreset as PackageSize)
+    ? (params.sizePreset as PackageSize)
+    : 'XS';
+
+  const [category, setCategory] = useState<Category>(initialCat);
+  const [size, setSize] = useState<PackageSize>(initialSize);
   const [weightClass, setWeightClass] = useState<WeightClass>('lt1');
   const [handling, setHandling] = useState<HandlingFlag[]>([]);
   const [notes, setNotes] = useState('');
@@ -82,6 +89,8 @@ export default function KirimPaketScreen() {
         photoUrl: photoUrl || '',
         pickupPreset: params.pickupPreset as string,
         dropoffPreset: params.dropoffPreset as string,
+        pickupJson: (params.pickupJson as string) || '',
+        dropoffJson: (params.dropoffJson as string) || '',
       },
     });
   };

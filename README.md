@@ -1,113 +1,123 @@
 # Kirimin Mobile
 
-Android version of **Kirimin** (web prototype: [Yada912/MidLogi](https://github.com/Yada912/MidLogi)). Kirimin is crowdsourced delivery: commuters carry packages along routes they already travel. Senders (**Kirim**) find a driver heading the same way, and drivers (**Angkut**) earn a little on their daily commute.
+Android, iOS, and Web app for **Kirimin** (original web prototype: [Yada912/MidLogi](https://github.com/Yada912/MidLogi)). Kirimin is crowdsourced commuter delivery in Bali: senders (**Kirim**) match with drivers (**Angkut**) already traveling the same route, saving cost and emissions while letting daily commuters earn along the way.
 
-The UI follows Hecate's MVP wireframes in [Figma](https://www.figma.com/design/RG3ubejQVL8MeC6ukD1kdH/SI?node-id=243-684).
+---
 
-## Status
+## What's Inside
 
-| Part | State |
+| Layer | Status & Highlights |
 |---|---|
-| **Backend API** (`server/`) | ✅ MVP done: auth & sessions, routes/trips (incl. weekly recurring), matching & pricing, orders end-to-end, chat, ratings, notifications + Expo push, photo uploads, realtime, settings, saved places, KTP verification, problem reports, driver wallet. 20 passing tests. |
-| **Shared domain** (`shared/`) | ✅ Types, labels, matching, pricing and the order state machine, shared by server and app |
-| **Mobile app** (`app/`) | ✅ Complete MVP: Expo SDK 58 (React Native + TypeScript), full component system, design tokens, Kirim S1–S7, Angkut D1–D5, Chat, Handover, and Rating |
+| **Backend API (`server/`)** | ✅ Zero-dependency Node.js + TypeScript API (`node:http`, `node:sqlite`, Turso/libSQL, Cloudinary): auth & sessions, recurring weekly routes, route matching & detour pricing, end-to-end orders, pluggable payment gateway with SHA-512 signed webhooks, SSE realtime, chat, ratings, Expo push, saved places (`/me/places`), customizable route presets (`/me/settings`), KTP verification, reports, and driver wallet. **36 passing tests.** |
+| **Shared Domain (`shared/`)** | ✅ Strongly typed domain models, Indonesian labels, detour matching, pricing rules, and order state machine shared across server and app. |
+| **Mobile & Web App (`app/`)** | ✅ Expo SDK 58 (React Native + TypeScript + Expo Router): vibrant Gojek/Apple Maps-inspired UI, playful custom vector artwork, thumb-reach above-the-fold layouts, real road-following interactive navigation map, 3-step new-user onboarding wizard, full customizability (presets, saved locations, profile/vehicle/notifications, route editing), and complete Kirim/Angkut/Handover/Chat/Payment/Rating flows. **17 passing contract & routing tests.** |
 
-## Repository layout
+---
 
-```
-kirimin-mobile/
-├── shared/src/            Imported by both server and app; no dependencies
-│   ├── domain.ts          Sizes, categories, statuses + Indonesian labels
-│   ├── matching.ts        "Driver searah": best pickup/drop-off insertion into a route (detour km)
-│   ├── pricing.ts         Ongkos titip, service fee, refunds
-│   ├── orderFlow.ts       Order state machine (who may move an order where)
-│   └── api.ts             JSON response types (User, Trip, Order, TripMatch, …)
-├── server/                Node.js API, zero npm dependencies
-│   ├── src/
-│   │   ├── index.ts       Boot: DB, migrations, seed, HTTP server, expiry job
-│   │   ├── app.ts         Wires services together + CORS/errors/logging
-│   │   ├── config.ts      Env vars (.env)
-│   │   ├── http/          Tiny router + validator
-│   │   ├── auth/          scrypt passwords + JWT
-│   │   ├── db/            SQLite adapter, migrations/, seed (Denpasar ↔ Bukit demo data)
-│   │   ├── realtime/      Server-Sent Events hub
-│   │   ├── storage/       Photo storage (local disk now, Cloudinary later)
-│   │   ├── push/          Expo push notifications (plain fetch)
-│   │   └── modules/       One file per feature: users, trips, orders, matches, chat, notifications,
-│   │                      places, reports, wallet
-│   ├── test/              Unit tests + full end-to-end flow test
-│   └── requests.http      Click-to-run API walkthrough (VS Code REST Client)
-├── docs/
-│   ├── SETUP-LAPTOP.md    Run it, reach it from your phone
-│   ├── API.md             Every endpoint, mapped to Figma screens
-│   └── HOSTING.md         Free hosting options for later + what to change
-└── render.yaml            Optional Render deployment blueprint
-```
+## Key Features & UX Highlights
 
-## Quick start
+### 1. Real Road-Following Interactive Map & Driver Navigation
+- **Actual Road Routing (`app/src/utils/routing.ts`)**: Fetches real driving road polylines and turn-by-turn steps via OSRM with automatic fallback to an embedded **South Bali Arterial Road Network Graph** (Renon, Sesetan, Bypass Ngurah Rai, Simpang Dewa Ruci, Jimbaran, Kampus Bukit, Nusa Dua) so routes always follow roads even offline.
+- **Apple Maps / Google Maps / Uber Driver Navigation HUD (`app/src/ui/MapView.tsx`)**:
+  - Floating **Turn-by-Turn Instruction Banner** showing maneuver icon, distance to next turn, street name, and a tappable **Panduan Rute Jalan** step drawer (tap any turn to focus that intersection).
+  - Dual-tone road polyline: muted slate behind the driver (traveled), vivid white-cased blue ahead (remaining).
+  - **Heading-aware rotating driver puck** with radar pulse and auto-follow toggle (pauses automatically when you drag to explore the map).
+  - **4 Map Layers**: *Peta Bersih (Nav)* (Carto Voyager), *Peta Jalan Detail* (OSM), *Mode Malam (Driver)* (Carto Dark), and *Vektor Offline*.
+  - Interactive marker tap cards, live ETA/distance capsule, and **Fullscreen Map** expansion.
+- **Map-First Live Screens**: Both Driver Active Navigation (`app/app/angkut/jalan/[tripId].tsx`) and Sender Live Tracking (`app/app/kirim/lacak/[id].tsx`) place the interactive road map on top with primary actions (`Mulai Perjalanan`, `Konfirmasi Dijemput`, `Konfirmasi Tiba`, `Kode 4 Digit`, `Chat`) immediately within thumb's reach.
 
-Requires Node 24 LTS (or Node 22.18 or newer). Nothing else.
+### 2. Lively, Colorful, Thumb-Reach UI
+- **Distinct Role Identities**: Electric Cobalt (`#1463F3`) for **Kirim (Sender)** and Fresh Emerald (`#059669`) for **Angkut (Driver)**.
+- **Custom Playful Vector Artwork (`app/src/ui/Illustrations.tsx`)**: Bali commuter scooter hero banner, route navigation map art, welcome corridor illustration, and handover verification shield.
+- **Above-the-Fold Primary Actions**: Main CTAs, active order/trip live banners, quick customization buttons, and route presets are immediately reachable without scrolling; secondary info and logs sit cleanly below.
 
+### 3. Full Customizability & Editing
+- **Customizable Route Presets (`app/app/kelola/preset.tsx`)**: Create, edit, color-tag, delete, or reset 1-tap home-screen route presets (synced to `/me/settings`), usable in both Kirim and Angkut modes.
+- **Saved & Custom Locations (`app/app/kelola/lokasi.tsx` + `PlacePickerSheet.tsx`)**: Add, edit, or delete Home/Work/Campus/Other locations by tapping directly on the map (`/me/places`). Saved places automatically appear at the top of every location picker across the app, plus inline quick-add.
+- **Edit Published Driver Routes (`app/app/angkut/edit-rute/[tripId].tsx`)**: Update route name, stops, departure time, capacity, max detour, accepted package sizes (`PATCH /trips/:id`), or cancel a route.
+- **Profile, Vehicle, Notifications & Verification (`app/app/kelola/profil.tsx`)**: Edit name, email, motor/mobil & license plate, toggle per-channel push notifications, and submit KTP verification.
+
+### 4. Comprehensive 3-Step New User Onboarding
+- **Guided Registration (`app/app/(auth)/register.tsx`)**:
+  1. **Akun**: Full name, phone, optional email, password with live strength meter & confirmation, terms checkbox.
+  2. **Peran & Kendaraan**: Visual Kirim vs. Angkut picker with inline vehicle type + license plate setup for drivers.
+  3. **Lokasi Favorit**: Pin & save your first favorite location (`Rumah` / `Kampus` / `Kantor`) directly on the map (or skip in 1 tap).
+
+### 5. Production-Structured Payment Gateway (Mock Sandbox → Midtrans / Xendit Ready)
+- **Pluggable Gateway Architecture (`server/src/payments/gateway.ts`, `server/src/modules/payments.ts`, `003_payment_gateway.sql`)**:
+  - Idempotent payment charge creation (`POST /orders/:id/payments` with `idempotencyKey`), automatic cancellation of superseded intents when switching methods, and full `payment_transactions` ledger persistence.
+  - Generates authentic **EMVCo CRC16-CCITT QRIS payloads**, **Indonesian Bank Virtual Accounts** (`BCA`, `Mandiri`, `BNI`, `BRI`), **E-Wallet Deep Links** (`GoPay`, `ShopeePay`, `DANA`, `OVO`), and live expiry countdowns (`15 min` QRIS/E-Wallet, `24h` VA).
+  - **Cryptographic SHA-512 Webhook Handler (`POST /webhooks/payments`)**: Verifies signatures using `crypto.timingSafeEqual`, rejects tampered signatures/amounts, guarantees idempotency on duplicate callbacks, settles orders atomically, and pushes realtime `payment.updated` + `order.updated` SSE events.
+  - **Sandbox Gateway Simulator (`POST /payments/:id/sandbox/simulate`)**: Built directly into the checkout screen (`app/app/bayar/[orderId].tsx`) to test live **Settlement → Digital Receipt**, **Failed Payment → Retry**, and **Expired Invoice** flows through the real signed webhook pipeline. Swapping to live Midtrans/Xendit only requires implementing `PaymentGatewayProvider` and setting `PAYMENT_GATEWAY`.
+
+---
+
+## Demo Flow Videos
+
+Recorded end-to-end against the live backend API and mobile viewport (`390×844`):
+
+| Flow | Video | What It Covers |
+|---|---|---|
+| **1. New User Onboarding** | [`docs/demos/01_onboarding_new_user.mp4`](docs/demos/01_onboarding_new_user.mp4) | Welcome art → 3-step account, role/vehicle & favorite map location registration → Driver Beranda |
+| **2. User (Kirim) View** | [`docs/demos/02_sender_kirim_flow.mp4`](docs/demos/02_sender_kirim_flow.mp4) | Kirim Beranda → Package details → Road route map & Place Picker → Choose matching driver → QRIS payment → Live tracking + 4-digit code |
+| **3. Driver (Angkut) Navigation** | [`docs/demos/03_driver_angkut_navigation.mp4`](docs/demos/03_driver_angkut_navigation.mp4) | Driver Beranda → Incoming requests → Accept package → Live road navigation HUD, turn-by-turn steps drawer, Night Mode, GPS movement, pickup confirmation |
+| **4. Handover & Rating** | [`docs/demos/04_handover_and_rating.mp4`](docs/demos/04_handover_and_rating.mp4) | Driver arrives → Enters 4-digit secret handover code → Delivery celebration → Complete trip → Sender rates driver 5 stars |
+| **5. Customizability & Editing** | [`docs/demos/05_customization_and_editing.mp4`](docs/demos/05_customization_and_editing.mp4) | Create/edit custom route presets → Add custom map location → Edit profile/vehicle → Edit published driver route |
+
+---
+
+## Quick Start
+
+Requires **Node.js 22.18+ (or 24 LTS)**.
+
+### 1. Start the Backend API
 ```bash
 cd server
-npm run dev        # http://localhost:3000/health, demo password: kirimin123
-npm test
+npm install
+npm run dev        # http://localhost:3000/health  (demo password: kirimin123)
 ```
 
-### Running the Mobile App
-
+### 2. Start the Mobile / Web App
 ```bash
 cd app
-npm start          # Or npx expo start, then press 'a' for Android emulator
+npm install --legacy-peer-deps
+npm start          # Press 'a' for Android emulator, 'w' for Web, or scan QR with Expo Go
 ```
 
-See [docs/APP.md](docs/APP.md) for the component system and architecture.
-
-### Tests
-
+### 3. Run All Tests & Typechecks
 ```bash
-cd server && npm test             # backend rules
-cd app && npm run test:contract   # UI ↔ API contract, no emulator needed
-cd app && npm run e2e             # Maestro UI flows on the Android emulator
+npm --prefix server run typecheck
+npm --prefix app run typecheck
+npm --prefix server test               # 33 backend unit & API tests
+npm --prefix app run test:contract     # 17 UI ↔ API wiring, routing & flow contract tests
+cd app && npm run e2e                  # Maestro Android emulator E2E flows
 ```
 
-See [docs/TESTING.md](docs/TESTING.md) for setup and what each layer covers.
-See [docs/SETUP-LAPTOP.md](docs/SETUP-LAPTOP.md) for connecting a phone (same Wi-Fi, ngrok or Cloudflare tunnel).
+---
 
-## How the backend is organised
+## Production Readiness Checklist (Supabase & Beyond)
 
-Each feature in `server/src/modules/` has the same three layers:
+If you already have a **Supabase** project, see the full step-by-step guide in **[`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md)**. Summary of what to run before launching to real users:
 
-- **Repository**: SQL only (`db.all/get/run`).
-- **Service**: business rules. Validates input, checks permissions, changes state, notifies people.
-- **Routes**: thin HTTP mapping (`r.post('/orders/:id/accept', ctx => orders.accept(ctx.userId(), ctx.params.id, await ctx.json()))`).
+1. **Database & Storage (Supabase)**:
+   - Unpause Supabase Postgres (and add a keep-alive cron if on free tier, or upgrade to Pro).
+   - Connect via Supavisor Transaction Pooler (`port 6543`, `sslmode=require`) and implement a Postgres `Db` adapter (`server/src/db/postgres.ts`) + apply `001_init.sql` & `002_mvp_features.sql`.
+   - Create `kirimin-uploads` (package photos) and private `kirimin-kyc` (KTP/selfie) buckets in Supabase Storage with a `supabaseFileStore` adapter.
+   - *(Alternative already built-in with zero code changes: **Turso/libSQL** + **Cloudinary** — see [`docs/HOSTING.md`](docs/HOSTING.md).)*
+2. **Always-On Backend API**: Deploy `server/` to Render/Railway/Fly.io/Oracle VM with `NODE_ENV=production`, strong `JWT_SECRET`, `SEED_ON_EMPTY=false`, `AUTO_APPROVE_VERIFICATION=false`, restricted `CORS_ORIGIN`, and SSE proxy buffering disabled (`X-Accel-Buffering: no`).
+3. **Production Maps, Routing & Geocoding**: Self-host OSRM for Bali/Indonesia (or use OpenRouteService/Mapbox/Google Directions), switch map tiles to a commercial provider (MapTiler/Stadia/Mapbox), and connect Photon/Google Places geocoding.
+4. **Real Payment Gateway (Indonesia)**: Integrate **Midtrans** or **Xendit** on `POST /orders/:id/pay` + signed webhook `POST /webhooks/midtrans` + Iris/Xendit disbursements for driver wallet withdrawals.
+5. **Push Notifications & Phone OTP**: Configure Firebase Cloud Messaging (`app/google-services.json` + `EXPO_ACCESS_TOKEN`) and SMS/WhatsApp OTP (Fonnte/Twilio) on registration.
+6. **Security, Moderation & Store Release**: Add rate limiting, Sentry error monitoring, an admin moderation queue for KTP/reports, release keystore (`keytool`), `EXPO_PUBLIC_API_URL`, and EAS Build (`.aab`) for Google Play Console.
 
-Rules worth knowing before you change anything:
+---
 
-- **Order statuses only change through `move()`** in `orders.ts`. It checks `shared/src/orderFlow.ts`, prevents two people acting on the same order at once, and writes the timeline. To add a status or transition, edit the table in `orderFlow.ts`.
-- **Matching, pricing and ETAs come from one function**, `evaluateTrip()` in `modules/tripMatch.ts`. The search (S3), the driver inbox (D3) and acceptance all call it, so they can't disagree.
-- **Schema changes go in a new numbered file** in `server/src/db/migrations/` (e.g. `002_add_vouchers.sql`). It's applied automatically on the next start. Never edit a migration that has already run.
-- **Swappable infrastructure.** `Db` (database), `FileStore` (photos) and `Hub` (realtime) are small interfaces, so moving to Turso, Cloudinary or WebSockets touches one file each. See [docs/HOSTING.md](docs/HOSTING.md).
+## Documentation Index
 
-### Adding a feature (example: vouchers)
-
-1. If it needs new data, add `server/src/db/migrations/002_vouchers.sql`.
-2. Create `server/src/modules/vouchers.ts` with `vouchersService(db, …)` and `vouchersRoutes(svc)`.
-3. Register it in `app.ts`: create the service, then `router.use('', vouchersRoutes(vouchers))`.
-4. Add the response type to `shared/src/api.ts` so the app gets it too.
-5. Add a test in `server/test/`.
-
-## MVP scope (Figma rows)
-
-| Row | Screens | Backend |
-|---|---|---|
-| 0 · Mulai & Beranda | O1 login, O2 pilih peran, O3 beranda, O4 aktivitas, O5 notifikasi | ✅ |
-| 1 · Angkut | D1–D2 buat rute, D3 permintaan, D4 detail, D5 perjalanan aktif, D6 rute saya, D7 edit, D8 batalkan, D9 riwayat | ✅ incl. weekly recurring routes |
-| 2 · Kirim | S1–S5 detail → jemput/antar → driver searah → konfirmasi → lacak, S6 permintaan terbuka, S7 batal & refund, S8 struk | ✅ |
-| 3 · Shared | X1 chat, X2 serah terima (4-digit code + photo), X3 rating, X4 verifikasi KTP | ✅ (X4 auto-approved until there's an admin panel) |
-| 6–7 · Pembayaran | P1–P12 | 🟡 payments mocked (`/orders/:id/pay`). Driver wallet ledger is real: earnings, cash, compensation, balance. Withdrawals are mocked. |
-| 8 · States | loading / empty / error / location permission | App side |
-| 4, 5, 9, 10 · Dropship, Transfer, Bus, Bus driver | | ⏭ later |
-| S9 / D10 · Laporkan masalah | | ✅ stored for follow-up (no admin panel yet) |
-| 11–12 · Pengaturan | ST1–ST19 | ✅ profile, password, logout-all, notification toggles, saved addresses, delete account |
-| Push notifications | | ✅ Expo push for every notification + chat, per-channel mute |
+- [`docs/PRODUCTION-CHECKLIST.md`](docs/PRODUCTION-CHECKLIST.md) — Full production readiness guide (Supabase Postgres/Storage + all other setups)
+- [`docs/HOSTING.md`](docs/HOSTING.md) — Free Rp 0 hosting option (Turso + Cloudinary + Render)
+- [`docs/UCD-REPORT.md`](docs/UCD-REPORT.md) — User-Centered Design audit, visual testing loop findings, and architecture notes
+- [`docs/API.md`](docs/API.md) — Complete REST & SSE endpoint reference
+- [`docs/APP.md`](docs/APP.md) — Mobile component system and design tokens
+- [`docs/TESTING.md`](docs/TESTING.md) — Testing strategy across server, contract, and E2E layers
+- [`docs/SETUP-LAPTOP.md`](docs/SETUP-LAPTOP.md) — Running locally with physical phones

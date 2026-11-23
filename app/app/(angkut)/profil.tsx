@@ -2,7 +2,17 @@ import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Package, Bike, ShieldCheck, HelpCircle, FileText, LogOut } from 'lucide-react-native';
+import {
+  Package,
+  Bike,
+  ShieldCheck,
+  HelpCircle,
+  FileText,
+  LogOut,
+  SlidersHorizontal,
+  Bookmark,
+  UserCog,
+} from 'lucide-react-native';
 import { colors, radii, spacing } from '../../src/theme/tokens';
 import {
   Text,
@@ -129,10 +139,26 @@ export default function AngkutProfilScreen() {
         {/* Menu Section */}
         <View style={styles.menuCard}>
           <ListItem
-            title="Kendaraan Terdaftar"
+            title="Edit Profil, Kendaraan & Notifikasi"
             subtitle={`${vehicle.type.toUpperCase()} - ${vehicle.plate}`}
-            leftIcon={<Bike size={22} color={colors.primary} />}
-            onPress={() => router.push({ pathname: '/placeholder', params: { topic: 'kendaraan' } })}
+            leftIcon={<UserCog size={22} color={colors.driver} />}
+            onPress={() => router.push('/kelola/profil')}
+            showChevron
+          />
+          <Divider />
+          <ListItem
+            title="Kelola Preset Rute Cepat"
+            subtitle="Buat & ubah template rute harianmu"
+            leftIcon={<SlidersHorizontal size={22} color={colors.accent.coral} />}
+            onPress={() => router.push('/kelola/preset')}
+            showChevron
+          />
+          <Divider />
+          <ListItem
+            title="Lokasi Tersimpan Saya"
+            subtitle="Titik asal, singgah, & tujuan favorit"
+            leftIcon={<Bookmark size={22} color={colors.accent.violet} />}
+            onPress={() => router.push('/kelola/lokasi')}
             showChevron
           />
           <Divider />

@@ -1,5 +1,5 @@
-import type { Me, PublicUser, Role, UserSettings, VehicleType, VerificationStatus } from '../../../shared/src/index.ts';
-import { NOTIFICATION_CHANNELS, ROLES, VEHICLE_TYPES } from '../../../shared/src/index.ts';
+import type { Me, PublicUser, Role, RoutePreset, UserSettings, VehicleType, VerificationStatus } from '../../../shared/src/index.ts';
+import { CATEGORIES, NOTIFICATION_CHANNELS, PACKAGE_SIZES, ROLES, VEHICLE_TYPES } from '../../../shared/src/index.ts';
 import { config } from '../config.ts';
 import type { Db } from '../db/database.ts';
 import { Router } from '../http/router.ts';
@@ -43,7 +43,10 @@ const DEFAULT_SETTINGS: UserSettings = {
 /** Stored settings merged over the defaults, so new toggles default to "on". */
 export function readSettings(json: string | null | undefined): UserSettings {
   const stored = parseJson<Partial<UserSettings>>(json, {});
-  return { push: { ...DEFAULT_SETTINGS.push, ...(stored.push ?? {}) } };
+  return {
+    push: { ...DEFAULT_SETTINGS.push, ...(stored.push ?? {}) },
+    ...(Array.isArray(stored.routePresets) ? { routePresets: stored.routePresets } : {}),
+  };
 }
 
 export function toPublicUser(u: UserRow): PublicUser {
@@ -129,6 +132,7 @@ const registerBody = v.object({
   email: v.optional(v.string({ max: 120, pattern: /^[^@\s]+@[^@\s]+\.[^@\s]+$/ })),
   password: v.string({ min: 6, max: 128, trim: false }),
   role: v.default(v.enum(ROLES), 'sender'),
+  vehicle: v.optional(v.object({ type: v.enum(VEHICLE_TYPES), plate: v.string({ min: 3, max: 15 }) })),
 });
 
 const loginBody = v.object({
@@ -149,6 +153,17 @@ const passwordBody = v.object({
   newPassword: v.string({ min: 6, max: 128, trim: false }),
 });
 
+const routePresetItem = v.object({
+  id: v.string({ min: 1, max: 60 }),
+  name: v.string({ min: 1, max: 80 }),
+  subtitle: v.optional(v.string({ max: 120 })),
+  pickup: shapes.place,
+  dropoff: shapes.place,
+  defaultSize: v.optional(v.enum(PACKAGE_SIZES)),
+  defaultCategory: v.optional(v.enum(CATEGORIES)),
+  color: v.optional(v.string({ max: 24 })),
+});
+
 const settingsBody = v.object({
   push: v.optional(v.object({
     orders: v.optional(v.boolean()),
@@ -156,6 +171,7 @@ const settingsBody = v.object({
     trips: v.optional(v.boolean()),
     promos: v.optional(v.boolean()),
   })),
+  routePresets: v.optional(v.array(routePresetItem, { max: 12 })),
 });
 
 const verificationBody = v.object({
@@ -206,8 +222,8 @@ export function usersService(db: Db) {
         avatar_url: null,
         active_role: body.role,
         verified: 0,
-        vehicle_type: null,
-        vehicle_plate: null,
+        vehicle_type: body.vehicle?.type ?? null,
+        vehicle_plate: body.vehicle?.plate ?? null,
         created_at: now,
         updated_at: now,
       };
@@ -267,12 +283,19 @@ export function usersService(db: Db) {
       return readSettings((await requireUser(userId)).settings_json);
     },
 
-    /** ST "Notifikasi": partial update, e.g. `{ "push": { "promos": false } }`. */
+    /** ST "Notifikasi" & custom route presets: partial update. */
     async updateSettings(userId: string, input: unknown) {
       const body = parse(input, settingsBody);
       const current = readSettings((await requireUser(userId)).settings_json);
       const pushPatch = Object.fromEntries(Object.entries(body.push ?? {}).filter(([, val]) => val !== undefined));
-      const next: UserSettings = { push: { ...current.push, ...pushPatch } };
+      const next: UserSettings = {
+        push: { ...current.push, ...pushPatch },
+        ...(body.routePresets !== undefined
+          ? { routePresets: body.routePresets as RoutePreset[] }
+          : current.routePresets !== undefined
+            ? { routePresets: current.routePresets }
+            : {}),
+      };
       await repo.update(userId, { settings_json: JSON.stringify(next) });
       return next;
     },

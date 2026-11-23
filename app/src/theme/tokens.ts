@@ -6,14 +6,48 @@
  */
 
 export const colors = {
-  // Brand & Primary
+  // Brand & Primary (Kirim — Electric Cobalt)
   primary: '#1463F3',
   primaryPressed: '#0E4BC1',
   primaryLight: '#EBF2FE',
   primarySubtle: '#F0F6FF',
+  primaryDeep: '#0B3B9E',
+
+  // Driver Mode Brand (Angkut — Fresh Emerald / Teal)
+  driver: '#059669',
+  driverPressed: '#047857',
+  driverDeep: '#064E3B',
+  driverLight: '#D1FAE5',
+  driverSubtle: '#ECFDF5',
+
+  // Lively Accents (Gojek / Apple Maps inspired warmth)
+  accent: {
+    indigo: '#4F46E5',
+    indigoLight: '#EEF2FF',
+    violet: '#7C3AED',
+    violetLight: '#F3E8FF',
+    amber: '#F59E0B',
+    amberLight: '#FEF3C7',
+    coral: '#F97316',
+    coralLight: '#FFEDD5',
+    teal: '#0D9488',
+    tealLight: '#CCFBF1',
+    pink: '#EC4899',
+    pinkLight: '#FCE7F3',
+  },
+
+  // Navigation HUD (Apple Maps / Google Maps Turn-by-Turn)
+  nav: {
+    hudBg: '#064E3B',
+    hudBgDark: '#0F172A',
+    hudAccent: '#34D399',
+    routeBlue: '#2563EB',
+    routeCasing: '#FFFFFF',
+    routeTraveled: '#94A3B8',
+  },
 
   // Canvas & Surfaces
-  background: '#F5F7FA',
+  background: '#F4F7FB',
   surface: '#FFFFFF',
   surfaceSecondary: '#F8FAFC',
   surfaceMuted: '#EDF2F7',

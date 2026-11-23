@@ -12,6 +12,15 @@ import type {
   Place,
   Role,
   PaymentMethod,
+  PaymentChannel,
+  PaymentTransaction,
+  SavedPlace,
+  SavedPlaceKind,
+  UserSettings,
+  Me,
+  Vehicle,
+  WalletSummary,
+  RoutePreset,
 } from '@kirimin/shared';
 import { api } from '../client';
 
@@ -20,8 +29,12 @@ export const queryKeys = {
   meta: ['meta'] as const,
   me: ['me'] as const,
   stats: ['stats'] as const,
+  savedPlaces: ['me', 'places'] as const,
+  settings: ['me', 'settings'] as const,
+  wallet: ['wallet'] as const,
   orders: (role: Role, scope: string) => ['orders', role, scope] as const,
   order: (id: string) => ['order', id] as const,
+  orderPayment: (orderId: string) => ['order', orderId, 'payment'] as const,
   tripsMine: (scope: string) => ['trips', 'mine', scope] as const,
   trip: (id: string) => ['trip', id] as const,
   tripRequests: (tripId: string) => ['trip', tripId, 'requests'] as const,
@@ -307,4 +320,189 @@ export function useReadAllNotifications() {
     },
   });
 }
+
+// ─── Saved Places, Settings/Presets, Profile, Wallet, Trip Edit ──────────────
+
+export function useSavedPlaces() {
+  return useQuery({
+    queryKey: queryKeys.savedPlaces,
+    queryFn: () => api.get<SavedPlace[]>('/me/places'),
+  });
+}
+
+export function useCreateSavedPlace() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      kind?: SavedPlaceKind;
+      label: string;
+      address?: string;
+      lat: number;
+      lng: number;
+    }) => api.post<SavedPlace>('/me/places', body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.savedPlaces });
+    },
+  });
+}
+
+export function useUpdateSavedPlace() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id: string;
+      kind?: SavedPlaceKind;
+      label?: string;
+      address?: string | null;
+      lat?: number;
+      lng?: number;
+    }) => api.patch<SavedPlace>(`/me/places/${id}`, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.savedPlaces });
+    },
+  });
+}
+
+export function useDeleteSavedPlace() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<{ ok: boolean }>(`/me/places/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.savedPlaces });
+    },
+  });
+}
+
+export function useUserSettings() {
+  return useQuery({
+    queryKey: queryKeys.settings,
+    queryFn: () => api.get<UserSettings>('/me/settings'),
+  });
+}
+
+export function useUpdateUserSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      push?: Partial<UserSettings['push']>;
+      routePresets?: RoutePreset[];
+    }) => api.patch<UserSettings>('/me/settings', body),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(queryKeys.settings, updated);
+    },
+  });
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      name?: string;
+      email?: string | null;
+      avatarUrl?: string | null;
+      activeRole?: Role;
+      vehicle?: Vehicle | null;
+    }) => api.patch<Me>('/me', body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.me });
+    },
+  });
+}
+
+export function useSubmitVerification() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { ktpPhotoUrl: string; selfiePhotoUrl: string }) =>
+      api.post<Me>('/me/verification', body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.me });
+    },
+  });
+}
+
+export function useUpdateTrip() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tripId, ...body }: { tripId: string } & Record<string, any>) =>
+      api.patch<Trip>(`/trips/${tripId}`, body),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
+      queryClient.setQueryData(queryKeys.trip(updated.id), updated);
+      queryClient.invalidateQueries({ queryKey: queryKeys.tripManifest(updated.id) });
+    },
+  });
+}
+
+export function useWallet() {
+  return useQuery({
+    queryKey: queryKeys.wallet,
+    queryFn: () => api.get<WalletSummary>('/wallet'),
+  });
+}
+
+// ─── Payment Gateway Hooks (Intents, Live Status, Sandbox Webhook) ──────────
+
+export function useOrderPayment(orderId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.orderPayment(orderId || ''),
+    queryFn: () => api.get<PaymentTransaction | null>(`/orders/${orderId}/payments/latest`),
+    enabled: !!orderId,
+    refetchInterval: 4000,
+  });
+}
+
+export function useCreatePaymentIntent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      orderId,
+      method,
+      channel,
+      idempotencyKey,
+    }: {
+      orderId: string;
+      method: PaymentMethod;
+      channel?: PaymentChannel;
+      idempotencyKey?: string;
+    }) =>
+      api.post<PaymentTransaction>(`/orders/${orderId}/payments`, {
+        method,
+        channel,
+        idempotencyKey,
+      }),
+    onSuccess: (tx) => {
+      queryClient.setQueryData(queryKeys.orderPayment(tx.orderId), tx);
+      queryClient.invalidateQueries({ queryKey: queryKeys.order(tx.orderId) });
+    },
+  });
+}
+
+export function useSimulatePaymentWebhook() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      paymentId,
+      outcome,
+      failureReason,
+    }: {
+      paymentId: string;
+      outcome: 'settlement' | 'expire' | 'failure';
+      failureReason?: string;
+    }) =>
+      api.post<{ ok: boolean; idempotent: boolean; payment: PaymentTransaction }>(
+        `/payments/${paymentId}/sandbox/simulate`,
+        { outcome, failureReason },
+      ),
+    onSuccess: (res) => {
+      queryClient.setQueryData(queryKeys.orderPayment(res.payment.orderId), res.payment);
+      queryClient.invalidateQueries({ queryKey: queryKeys.order(res.payment.orderId) });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+  });
+}
+
+
 

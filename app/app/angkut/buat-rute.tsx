@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPin, Navigation, Clock, Crosshair, ArrowUpDown } from 'lucide-react-native';
 import type { Place, PackageSize } from '@kirimin/shared';
@@ -23,14 +23,30 @@ import { BALI_PLACES, PLACE_BY_ID } from '../../src/constants/places';
 
 const QUICK_TIMES = ['07:30', '08:00', '12:00', '17:00'];
 
+function parsePlaceParam(raw: unknown): Place | undefined {
+  if (typeof raw !== 'string' || !raw.trim()) return undefined;
+  try {
+    const p = JSON.parse(raw);
+    if (p && typeof p.lat === 'number' && typeof p.lng === 'number' && p.label) return p;
+  } catch {
+    // ignore
+  }
+  return undefined;
+}
+
 export default function AngkutBuatRuteScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { user } = useAuth();
   const { mutateAsync: createTrip, isPending } = useCreateTrip();
 
-  const [name, setName] = useState('Ke Kampus');
-  const [origin, setOrigin] = useState<Place>(PLACE_BY_ID.renon);
-  const [destination, setDestination] = useState<Place>(PLACE_BY_ID.kampus_bukit);
+  const [name, setName] = useState((params.namePreset as string) || 'Ke Kampus');
+  const [origin, setOrigin] = useState<Place>(
+    parsePlaceParam(params.originJson) || PLACE_BY_ID.renon,
+  );
+  const [destination, setDestination] = useState<Place>(
+    parsePlaceParam(params.destinationJson) || PLACE_BY_ID.kampus_bukit,
+  );
   const [selectedStopLabels, setSelectedStopLabels] = useState<string[]>([
     PLACE_BY_ID.sesetan.label,
     PLACE_BY_ID.dewa_ruci.label,

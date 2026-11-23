@@ -17,6 +17,9 @@ import { chatRoutes, chatService } from './modules/chat.ts';
 import { placesRoutes, placesService } from './modules/places.ts';
 import { reportsRoutes, reportsService } from './modules/reports.ts';
 import { walletRoutes, walletService } from './modules/wallet.ts';
+import { paymentsRoutes, paymentsService } from './modules/payments.ts';
+import type { PaymentGatewayProvider } from './payments/gateway.ts';
+import { createMockGatewayProvider } from './payments/gateway.ts';
 import type { PushSender } from './push/expo.ts';
 import { noopPushSender } from './push/expo.ts';
 
@@ -26,13 +29,21 @@ export interface AppDeps {
   files: FileStore;
   /** Phone push notifications; defaults to sending nothing. */
   push?: PushSender;
+  /** Payment gateway adapter; defaults to realistic sandbox provider with signed webhooks. */
+  paymentGateway?: PaymentGatewayProvider;
 }
 
 /**
  * Wires services together and returns the HTTP request handler.
  * Each module = service (rules) + routes (HTTP); add new features the same way.
  */
-export function createApp({ db, hub, files, push = noopPushSender }: AppDeps) {
+export function createApp({
+  db,
+  hub,
+  files,
+  push = noopPushSender,
+  paymentGateway = createMockGatewayProvider(config.paymentWebhookSecret),
+}: AppDeps) {
   // Services, in dependency order.
   const users = usersService(db);
   const notifications = notificationsService(db, hub, push);
@@ -45,6 +56,7 @@ export function createApp({ db, hub, files, push = noopPushSender }: AppDeps) {
   const chat = chatService(db, hub, orders, users, notifications);
   const places = placesService(db);
   const reports = reportsService(db, orders, notifications);
+  const payments = paymentsService(db, hub, paymentGateway, orders, wallet, notifications);
 
   const router = new Router();
 
@@ -61,6 +73,8 @@ export function createApp({ db, hub, files, push = noopPushSender }: AppDeps) {
     orderStatuses: shared.ORDER_STATUSES.map((s) => ({ value: s, label: shared.ORDER_STATUS_LABELS[s] })),
     trackingSteps: shared.TRACKING_STEPS,
     paymentMethods: shared.PAYMENT_METHODS,
+    paymentChannels: shared.PAYMENT_CHANNELS.map((c) => ({ value: c, label: shared.PAYMENT_CHANNEL_LABELS[c] })),
+    paymentGateway: { provider: paymentGateway.name, isSandbox: paymentGateway.isSandbox },
     pricing: shared.PRICING,
     verificationStatuses: shared.VERIFICATION_STATUSES.map((s) => ({ value: s, label: shared.VERIFICATION_LABELS[s] })),
     savedPlaceKinds: shared.SAVED_PLACE_KINDS.map((k) => ({ value: k, label: shared.SAVED_PLACE_LABELS[k] })),
@@ -97,6 +111,7 @@ export function createApp({ db, hub, files, push = noopPushSender }: AppDeps) {
   router.use('', placesRoutes(places));
   router.use('', reportsRoutes(reports));
   router.use('', walletRoutes(wallet));
+  router.use('', paymentsRoutes(payments));
 
   async function handle(req: IncomingMessage, res: ServerResponse) {
     const started = Date.now();
@@ -108,7 +123,7 @@ export function createApp({ db, hub, files, push = noopPushSender }: AppDeps) {
     const path = url.pathname.replace(/^\/api(?=\/|$)/, '') || '/';
 
     res.setHeader('Access-Control-Allow-Origin', config.corsOrigin);
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, ngrok-skip-browser-warning');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Kirimin-Signature, ngrok-skip-browser-warning');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
     if (req.method === 'OPTIONS') {
       res.writeHead(204).end();
@@ -137,7 +152,7 @@ export function createApp({ db, hub, files, push = noopPushSender }: AppDeps) {
     }
   }
 
-  return { handle, services: { users, notifications, wallet, trips, orders, matches, chat, places, reports } };
+  return { handle, services: { users, notifications, wallet, trips, orders, matches, chat, places, reports, payments }, paymentGateway };
 }
 
 export type App = ReturnType<typeof createApp>;

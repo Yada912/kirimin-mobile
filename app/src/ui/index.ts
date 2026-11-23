@@ -23,4 +23,7 @@ export * from './CodeDisplay';
 export * from './CodeInput';
 export * from './PlacePickerSheet';
 export * from './QrCodeMatrix';
+export * from './Illustrations';
+export * from './BrandLogo';
+
 

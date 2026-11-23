@@ -2,8 +2,15 @@ import React from 'react';
 import { StyleSheet, View, ScrollView, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MessageSquare, Phone, ShieldCheck, MapPin, Star, AlertTriangle } from 'lucide-react-native';
-import { colors, radii, spacing } from '../../../src/theme/tokens';
+import {
+  MessageSquare,
+  ShieldCheck,
+  MapPin,
+  Star,
+  CreditCard,
+  Radio,
+} from 'lucide-react-native';
+import { colors, radii, spacing, shadows } from '../../../src/theme/tokens';
 import {
   Text,
   TopBar,
@@ -20,7 +27,7 @@ import {
   ErrorState,
 } from '../../../src/ui';
 import { useOrder, useTrip } from '../../../src/api/hooks/useApi';
-import { formatDateTime, formatRupiah } from '../../../src/utils/format';
+import { formatDateTime } from '../../../src/utils/format';
 
 export default function LacakPesananScreen() {
   const router = useRouter();
@@ -65,17 +72,21 @@ export default function LacakPesananScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar
-        title={`Pesanan ${order.code}`}
+        title={`Lacak ${order.code}`}
+        subtitle={driverGps ? 'Posisi driver aktif' : 'Pembaruan realtime'}
         rightAction={
           order.driver ? (
             <Button
               label="Chat"
               variant="ghost"
               size="sm"
-              leftIcon={<MessageSquare size={16} color={colors.primary} />}
+              fullWidth={false}
+              leftIcon={<MessageSquare size={15} color={colors.primary} />}
               onPress={() => router.push({ pathname: '/chat/[orderId]', params: { orderId: order.id } })}
             />
-          ) : undefined
+          ) : (
+            <StatusPill status={order.status} />
+          )
         }
       />
 
@@ -91,51 +102,99 @@ export default function LacakPesananScreen() {
           />
         }
       >
-        {/* Status Card */}
-        <Card variant="elevated" padding="lg" style={styles.statusCard}>
+        {/* TOP HERO: Live Road-Following Interactive Map (Gojek / Uber style) */}
+        <View style={styles.mapSection}>
+          <MapView
+            pickup={order.pickup}
+            dropoff={order.dropoff}
+            stops={trip?.stops || []}
+            driverLocation={driverGps}
+            height={250}
+            showSettings
+            navigationMode={!!driverGps && !isCompleted && !isCancelled}
+            allowExpand
+            style={styles.mapHero}
+          />
+          {driverGps && !isCompleted && !isCancelled ? (
+            <View style={styles.liveTrackPill}>
+              <Radio size={13} color={colors.driver} />
+              <Text variant="captionMedium" color={colors.driverDeep} weight="700" style={{ marginLeft: 5 }}>
+                Driver sedang menuju titik antar di rute jalan aktif
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* ABOVE THE FOLD: Status + 5-Step Progress + Quick Primary CTA */}
+        <Card variant="elevated" padding="md" style={styles.statusCard}>
           <View style={styles.statusHeader}>
-            <View>
+            <View style={{ flex: 1, marginRight: spacing.sm }}>
               <Text variant="headline" color={colors.text.primary} weight="700">
                 Status Pengiriman
               </Text>
-              <Text variant="caption" color={colors.text.muted}>
-                Pembaruan otomatis secara realtime
+              <Text variant="caption" color={colors.text.muted} numberOfLines={1}>
+                {order.pickup.label} → {order.dropoff.label}
               </Text>
             </View>
             <StatusPill status={order.status} />
           </View>
 
-          {/* 5-Step Tracker */}
-          <ProgressSteps currentStatus={order.status} style={{ marginVertical: spacing.sm }} />
+          <ProgressSteps currentStatus={order.status} style={{ marginVertical: spacing.xs }} />
+
+          {/* Quick Action Strip right above the fold */}
+          <View style={styles.quickBtnRow}>
+            {isCompleted ? (
+              <Button
+                label="Beri Rating Driver"
+                variant="primary"
+                size="md"
+                leftIcon={<Star size={16} color="#FFF" />}
+                onPress={() => router.push({ pathname: '/rating/[orderId]', params: { orderId: order.id } })}
+                style={{ flex: 1 }}
+              />
+            ) : (
+              <>
+                {order.driver ? (
+                  <Button
+                    label="Chat Driver"
+                    variant="primary"
+                    size="md"
+                    leftIcon={<MessageSquare size={16} color="#FFF" />}
+                    onPress={() => router.push({ pathname: '/chat/[orderId]', params: { orderId: order.id } })}
+                    style={{ flex: 1 }}
+                  />
+                ) : null}
+                {order.payment?.status === 'unpaid' && !isCancelled ? (
+                  <Button
+                    label="Bayar Sekarang"
+                    variant="outline"
+                    size="md"
+                    leftIcon={<CreditCard size={15} color={colors.primary} />}
+                    onPress={() => router.push({ pathname: '/bayar/[orderId]', params: { orderId: order.id } })}
+                    style={{ flex: 1 }}
+                  />
+                ) : null}
+              </>
+            )}
+          </View>
         </Card>
 
-        {/* 4-Digit Handover Code (Critical for Definition of Done) */}
+        {/* 4-Digit Handover Code (Visible right away) */}
         {order.handoverCode && !isCompleted && !isCancelled && (
           <CodeDisplay
             code={order.handoverCode}
             testID="handover-code-display"
             label="Kode Serah Terima (4 Digit)"
-            hint="Berikan kode ini ke penerima paket. Driver akan meminta kode ini di lokasi tujuan untuk menyelesaikan pengantaran."
+            hint="Berikan kode ini ke penerima paket. Driver akan memasukkan kode ini saat serah terima di tujuan."
             style={styles.codeCard}
           />
         )}
 
-        {/* Map View */}
-        <View style={styles.mapSection}>
-          <MapView
-            pickup={order.pickup}
-            dropoff={order.dropoff}
-            driverLocation={driverGps}
-            height={210}
-            showSettings
-          />
-        </View>
-
-        {/* Driver Card */}
+        {/* BELOW THE FOLD: Driver Card */}
         {order.driver ? (
           <Card variant="outlined" padding="md" style={styles.driverCard}>
             <View style={styles.driverRow}>
-              <Avatar name={order.driver.name} url={order.driver.avatarUrl} size={50} />
+              <Avatar name={order.driver.name} url={order.driver.avatarUrl} size={48} />
               <View style={{ flex: 1, marginLeft: spacing.md }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text variant="headline" color={colors.text.primary} weight="700">
@@ -146,25 +205,10 @@ export default function LacakPesananScreen() {
                   )}
                 </View>
                 <Text variant="caption" color={colors.text.secondary}>
-                  Kendaraan: {order.driver.vehicle?.plate || 'Motor'} ({order.driver.vehicle?.type || 'motor'})
-                </Text>
-                <Text variant="caption" color={colors.primary} weight="600">
-                  Rating: {order.driver.ratingAvg?.toFixed(1) || '5.0'} ★ ({order.driver.deliveriesCount}x antar)
+                  {order.driver.vehicle?.plate || 'Motor'} ({order.driver.vehicle?.type || 'motor'}) •{' '}
+                  {order.driver.ratingAvg?.toFixed(1) || '5.0'} ★ ({order.driver.deliveriesCount}x antar)
                 </Text>
               </View>
-            </View>
-
-            <Divider style={{ marginVertical: spacing.sm }} />
-
-            <View style={styles.driverActions}>
-              <Button
-                label="Kirim Pesan"
-                variant="outline"
-                size="sm"
-                leftIcon={<MessageSquare size={16} color={colors.primary} />}
-                onPress={() => router.push({ pathname: '/chat/[orderId]', params: { orderId: order.id } })}
-                style={{ flex: 1 }}
-              />
             </View>
           </Card>
         ) : (
@@ -181,7 +225,7 @@ export default function LacakPesananScreen() {
         {/* Rute & Penerima */}
         <Card variant="outlined" padding="md" style={styles.sectionCard}>
           <Text variant="headline" color={colors.text.primary} weight="700" style={{ marginBottom: spacing.sm }}>
-            Rincian Alamat
+            Rincian Alamat & Penerima
           </Text>
           <View style={styles.addressRow}>
             <MapPin size={18} color={colors.primary} />
@@ -196,7 +240,7 @@ export default function LacakPesananScreen() {
           </View>
           <Divider style={{ marginVertical: spacing.sm }} />
           <View style={styles.addressRow}>
-            <MapPin size={18} color={colors.semantic.success} />
+            <MapPin size={18} color={colors.driver} />
             <View style={{ flex: 1, marginLeft: spacing.sm }}>
               <Text variant="caption" color={colors.text.muted}>
                 Tujuan (Penerima: {order.recipient.name} - {order.recipient.phone})
@@ -208,19 +252,10 @@ export default function LacakPesananScreen() {
           </View>
         </Card>
 
-        {/* Rincian Biaya & Pembayaran */}
+        {/* Rincian Biaya */}
         {order.price && (
           <Card variant="outlined" padding="md" style={styles.sectionCard}>
             <PriceRow fee={order.price.fee} serviceFee={order.price.serviceFee} total={order.price.total} />
-            {order.payment?.status === 'unpaid' && !isCancelled && (
-              <Button
-                label="Bayar Sekarang (QRIS / E-Wallet / VA)"
-                variant="outline"
-                size="sm"
-                onPress={() => router.push({ pathname: '/bayar/[orderId]', params: { orderId: order.id } })}
-                style={{ marginTop: spacing.md }}
-              />
-            )}
           </Card>
         )}
 
@@ -246,17 +281,7 @@ export default function LacakPesananScreen() {
           </Card>
         )}
 
-        {/* Actions based on state */}
-        {isCompleted ? (
-          <Button
-            label="Beri Rating Driver"
-            variant="primary"
-            size="lg"
-            leftIcon={<Star size={18} color="#FFF" />}
-            onPress={() => router.push({ pathname: '/rating/[orderId]', params: { orderId: order.id } })}
-            style={styles.actionBtn}
-          />
-        ) : canCancel ? (
+        {canCancel ? (
           <Button
             label="Batalkan Pesanan"
             variant="ghost"
@@ -276,8 +301,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.lg,
+    padding: spacing.md,
     paddingBottom: 40,
+  },
+  mapSection: {
+    marginBottom: spacing.md,
+  },
+  mapHero: {
+    borderRadius: radii.xl,
+    ...shadows.card,
+  },
+  liveTrackPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.driverSubtle,
+    borderWidth: 1,
+    borderColor: colors.driverLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radii.full,
+    marginTop: spacing.xs,
   },
   statusCard: {
     backgroundColor: colors.surface,
@@ -287,12 +330,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: spacing.xs,
+  },
+  quickBtnRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
   },
   codeCard: {
-    marginBottom: spacing.md,
-  },
-  mapSection: {
     marginBottom: spacing.md,
   },
   driverCard: {
@@ -302,10 +346,6 @@ const styles = StyleSheet.create({
   driverRow: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  driverActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
   },
   waitingDriverCard: {
     backgroundColor: colors.primarySubtle,
@@ -332,10 +372,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.primary,
     marginTop: 6,
-  },
-  actionBtn: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.lg,
   },
   cancelBtn: {
     marginTop: spacing.xs,

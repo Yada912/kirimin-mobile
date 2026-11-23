@@ -66,6 +66,13 @@ export function useRealtimeSubscription() {
             queryClient.invalidateQueries({ queryKey: queryKeys.tripManifest(data.tripId) });
             break;
           }
+          case 'payment.updated': {
+            const payment = data.payment;
+            queryClient.setQueryData(queryKeys.orderPayment(payment.orderId), payment);
+            queryClient.invalidateQueries({ queryKey: queryKeys.order(payment.orderId) });
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            break;
+          }
         }
       } catch (err) {
         console.warn('Error parsing SSE event:', err);
@@ -77,6 +84,7 @@ export function useRealtimeSubscription() {
     es.addEventListener('message.created', handle);
     es.addEventListener('notification.created', handle);
     es.addEventListener('trip.location', handle);
+    es.addEventListener('payment.updated', handle);
 
     es.addEventListener('error', () => {
       // Stream drop is gracefully handled; react-query polling remains active fallback

@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Package, Bike, Check } from 'lucide-react-native';
 import type { Role } from '@kirimin/shared';
 import { colors, radii, spacing } from '../../src/theme/tokens';
-import { Text, TopBar, Card, Button } from '../../src/ui';
+import { Text, TopBar, Card, Button, BrandLogo } from '../../src/ui';
 import { useAuth } from '../../src/auth/AuthContext';
 
 export default function PilihPeranScreen() {
@@ -35,6 +35,7 @@ export default function PilihPeranScreen() {
       <TopBar title="Pilih Peran Anda" canGoBack={false} />
       <View style={styles.container}>
         <View style={styles.header}>
+          <BrandLogo size="lg" variant="dark" style={{ alignSelf: 'center', marginBottom: spacing.xs }} />
           <Text variant="title" color={colors.text.primary} weight="700" align="center">
             Mau melakukan apa hari ini?
           </Text>

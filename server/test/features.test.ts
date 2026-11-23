@@ -252,3 +252,39 @@ test('meta lists the new pickers', async () => {
     assert.ok(key in meta, key);
   }
 });
+
+test('onboarding vehicle registration and customizable routePresets persist in settings', async () => {
+  const reg = await t.ok<AuthResponse>(
+    t.call('POST', '/auth/register', undefined, {
+      name: 'Budi Komuter',
+      phone: '081388880099',
+      password: 'password123',
+      role: 'driver',
+      vehicle: { type: 'motor', plate: 'DK 9090 BK' },
+    }),
+    201,
+  );
+  assert.equal(reg.user.activeRole, 'driver');
+  assert.deepEqual(reg.user.vehicle, { type: 'motor', plate: 'DK 9090 BK' });
+
+  const preset = {
+    id: 'preset-custom-1',
+    name: 'Kos Renon → Lab FT',
+    subtitle: 'Rute kuliah pagi',
+    pickup: PLACES.renon,
+    dropoff: PLACES.gedungFT,
+    defaultCategory: 'Dokumen',
+    defaultSize: 'XS',
+    color: '#059669',
+  };
+  const saved = await t.ok<UserSettings>(t.call('PATCH', '/me/settings', reg.token, { routePresets: [preset] }));
+  assert.equal(saved.routePresets?.length, 1);
+  assert.equal(saved.routePresets?.[0].name, 'Kos Renon → Lab FT');
+  assert.equal(saved.push.orders, true);
+
+  // Toggling push notifications preserves existing routePresets
+  const afterPush = await t.ok<UserSettings>(t.call('PATCH', '/me/settings', reg.token, { push: { promos: false } }));
+  assert.equal(afterPush.push.promos, false);
+  assert.equal(afterPush.routePresets?.length, 1);
+});
+

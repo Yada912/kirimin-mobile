@@ -14,6 +14,7 @@ import {
   Divider,
   SkeletonCard,
   ErrorState,
+  HandoverSparkArt,
 } from '../../src/ui';
 import { useOrder, useDeliverOrder } from '../../src/api/hooks/useApi';
 import { uploadImage } from '../../src/api/client';
@@ -101,7 +102,7 @@ export default function SerahTerimaScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.successContainer}>
-          <CheckCircle2 size={72} color={colors.semantic.success} />
+          <HandoverSparkArt width={100} height={100} />
           <Text variant="largeTitle" color={colors.text.primary} weight="700" align="center" style={styles.successTitle}>
             Paket Berhasil Diserahkan!
           </Text>
@@ -155,7 +156,7 @@ export default function SerahTerimaScreen() {
 
         {/* Code Input Section */}
         <Card variant="elevated" padding="lg" style={styles.inputCard}>
-          <ShieldCheck size={32} color={colors.primary} />
+          <HandoverSparkArt width={64} height={64} />
           <Text variant="title" color={colors.text.primary} weight="700" align="center" style={styles.cardHeading}>
             Masukkan Kode 4 Digit
           </Text>

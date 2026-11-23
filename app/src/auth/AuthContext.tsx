@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { Me, Role } from '@kirimin/shared';
+import type { Me, Role, Vehicle } from '@kirimin/shared';
 import { api } from '../api/client';
 import { getToken, removeToken, saveToken } from './storage';
 
@@ -9,10 +9,18 @@ interface AuthContextType {
   activeRole: Role;
   isLoading: boolean;
   login: (phone: string, password: string) => Promise<void>;
-  register: (payload: { name: string; phone: string; password: string; email?: string; role?: Role }) => Promise<void>;
+  register: (payload: {
+    name: string;
+    phone: string;
+    password: string;
+    email?: string;
+    role?: Role;
+    vehicle?: Vehicle;
+  }) => Promise<void>;
   switchRole: (role: Role) => Promise<void>;
   logout: () => Promise<void>;
   refreshMe: () => Promise<void>;
+  setUserLocal: (u: Me) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -70,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string;
     email?: string;
     role?: Role;
+    vehicle?: Vehicle;
   }) => {
     const res = await api.post<{ token: string; user: Me }>('/auth/register', payload);
     await saveToken(res.token);
@@ -111,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         switchRole,
         logout,
         refreshMe,
+        setUserLocal: setUser,
       }}
     >
       {children}
