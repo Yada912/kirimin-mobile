@@ -1,0 +1,87 @@
+# Builds an installable release APK of the mobile app and attaches it to a GitHub Release.
+#
+# Run it from the Actions tab ("Android APK" → Run workflow), or push a tag like v1.1.0.
+# The APK is signed with the debug keystore from the Expo prebuild template: fine for
+# installing on phones directly, not for the Play Store (see docs/PRODUCTION-SETUP-FREE.md).
+name: Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npx tsc --noEmit -p .
+
+      - name: Generate native Android project
+        run: npx expo prebuild -p android --clean --no-install
+
+      - name: Build release APK
+        working-directory: app/android
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
+
+      - name: Name the APK after the app version
+        id: apk
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          mkdir -p ../dist-apk
+          cp android/app/build/outputs/apk/release/app-release.apk "../dist-apk/kirimin-v${VERSION}.apk"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "path=dist-apk/kirimin-v${VERSION}.apk" >> "$GITHUB_OUTPUT"
+          ls -la ../dist-apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kirimin-v${{ steps.apk.outputs.version }}-apk
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.apk.outputs.version }}
+          APK: ${{ steps.apk.outputs.path }}
+        run: |
+          TAG="v${VERSION}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --clobber
+          else
+            gh release create "$TAG" "$APK" --target "$GITHUB_SHA" --title "Kirimin ${TAG}" \
+              --notes "Android APK built from ${GITHUB_SHA}. Install it on the phone, then set the server address in the app (see docs/APK-CONNECT.md)."
+          fi
