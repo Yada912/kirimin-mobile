@@ -2,33 +2,18 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Package, Bike, Sparkles } from 'lucide-react-native';
+import { Package, Bike, ShieldCheck } from 'lucide-react-native';
 import { colors, radii, spacing } from '../../src/theme/tokens';
 import { Text, Button, Card } from '../../src/ui';
-import { useAuth } from '../../src/auth/AuthContext';
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { login } = useAuth();
-  const [demoLoading, setDemoLoading] = React.useState<string | null>(null);
-
-  const handleQuickLogin = async (phone: string, roleName: string) => {
-    try {
-      setDemoLoading(phone);
-      await login(phone, 'kirimin123');
-      router.replace('/');
-    } catch (err: any) {
-      alert(err.message || 'Gagal login demo');
-    } finally {
-      setDemoLoading(null);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.logoBadge}>
-          <Package size={36} color={colors.primary} />
+          <Package size={38} color={colors.primary} />
         </View>
         <Text variant="largeTitle" color={colors.text.primary} weight="700" align="center">
           Kirimin
@@ -54,32 +39,22 @@ export default function WelcomeScreen() {
             </View>
           </View>
         </Card>
-      </View>
 
-      <View style={styles.demoSection}>
-        <Text variant="captionMedium" color={colors.text.muted} align="center" style={styles.demoTitle}>
-          AKUN DEMO CEPAT (TAP UNTUK MASUK)
-        </Text>
-        <View style={styles.demoButtons}>
-          <Button
-            label="Masuk: Wayan (Pengirim)"
-            variant="outline"
-            size="sm"
-            loading={demoLoading === '081200000001'}
-            disabled={!!demoLoading}
-            onPress={() => handleQuickLogin('081200000001', 'sender')}
-            style={styles.demoBtn}
-          />
-          <Button
-            label="Masuk: Made (Driver)"
-            variant="outline"
-            size="sm"
-            loading={demoLoading === '081200000003'}
-            disabled={!!demoLoading}
-            onPress={() => handleQuickLogin('081200000003', 'driver')}
-            style={styles.demoBtn}
-          />
-        </View>
+        <Card variant="flat" padding="md" style={styles.featureCard}>
+          <View style={styles.featureRow}>
+            <View style={[styles.featureIcon, { backgroundColor: colors.semantic.successLight }]}>
+              <ShieldCheck size={20} color={colors.semantic.success} />
+            </View>
+            <View style={styles.featureText}>
+              <Text variant="headline" color={colors.text.primary}>
+                Serah Terima Aman 4 Digit
+              </Text>
+              <Text variant="caption" color={colors.text.secondary}>
+                Pelacakan rute langsung dan verifikasi kode rahasia saat paket tiba di tujuan.
+              </Text>
+            </View>
+          </View>
+        </Card>
       </View>
 
       <View style={styles.actionSection}>
@@ -111,12 +86,12 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginTop: spacing.xl,
+    marginTop: spacing.xxxl,
   },
   logoBadge: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -124,10 +99,11 @@ const styles = StyleSheet.create({
   },
   tagline: {
     marginTop: spacing.sm,
-    maxWidth: 300,
+    maxWidth: 310,
     lineHeight: 22,
   },
   heroFeature: {
+    gap: spacing.sm,
     marginVertical: spacing.md,
   },
   featureCard: {
@@ -138,8 +114,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   featureIcon: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: radii.md,
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
@@ -149,19 +125,6 @@ const styles = StyleSheet.create({
   featureText: {
     flex: 1,
   },
-  demoSection: {
-    marginVertical: spacing.sm,
-  },
-  demoTitle: {
-    marginBottom: spacing.sm,
-    letterSpacing: 0.5,
-  },
-  demoButtons: {
-    gap: spacing.xs,
-  },
-  demoBtn: {
-    backgroundColor: colors.surface,
-  },
   actionSection: {
     gap: spacing.sm,
     marginBottom: spacing.md,
@@ -170,4 +133,3 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
 });
-

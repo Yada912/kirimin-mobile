@@ -132,7 +132,7 @@ export default function AngkutProfilScreen() {
             title="Kendaraan Terdaftar"
             subtitle={`${vehicle.type.toUpperCase()} - ${vehicle.plate}`}
             leftIcon={<Bike size={22} color={colors.primary} />}
-            onPress={() => router.push('/placeholder')}
+            onPress={() => router.push({ pathname: '/placeholder', params: { topic: 'kendaraan' } })}
             showChevron
           />
           <Divider />
@@ -140,7 +140,7 @@ export default function AngkutProfilScreen() {
             title="Bantuan & Dukungan Driver"
             subtitle="Panduan operasional dan serah terima"
             leftIcon={<HelpCircle size={22} color={colors.primary} />}
-            onPress={() => router.push('/placeholder')}
+            onPress={() => router.push({ pathname: '/placeholder', params: { topic: 'bantuan-driver' } })}
             showChevron
           />
           <Divider />
@@ -148,7 +148,7 @@ export default function AngkutProfilScreen() {
             title="Ketentuan & Syarat Driver"
             subtitle="Aturan pembatalan dan asuransi titipan"
             leftIcon={<FileText size={22} color={colors.primary} />}
-            onPress={() => router.push('/placeholder')}
+            onPress={() => router.push({ pathname: '/placeholder', params: { topic: 'syarat-driver' } })}
             showChevron
           />
         </View>

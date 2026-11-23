@@ -10,6 +10,7 @@ server/data/
 dist/
 web-build/
 *.apk
+!releases/*.apk
 *.aab
 android/
 ios/

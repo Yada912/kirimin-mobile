@@ -37,12 +37,6 @@ export default function LoginScreen() {
     }
   };
 
-  const setDemo = (p: string) => {
-    setPhone(p);
-    setPassword('kirimin123');
-    setError(null);
-  };
-
   return (
     <SafeAreaView style={styles.safe}>
       <TopBar title="Masuk ke Kirimin" />
@@ -98,28 +92,17 @@ export default function LoginScreen() {
             style={styles.submitBtn}
           />
 
-          <View style={styles.demoBox}>
-            <Text variant="captionMedium" color={colors.text.muted} align="center" style={styles.demoTitle}>
-              ISI CEPAT AKUN DEMO
+          <View style={styles.registerLink}>
+            <Text variant="callout" color={colors.text.secondary}>
+              Belum punya akun?{' '}
             </Text>
-            <View style={styles.demoRow}>
-              <Button
-                label="Wayan (Sender)"
-                variant="outline"
-                size="sm"
-                fullWidth={false}
-                onPress={() => setDemo('081200000001')}
-                style={styles.demoBtn}
-              />
-              <Button
-                label="Made (Driver)"
-                variant="outline"
-                size="sm"
-                fullWidth={false}
-                onPress={() => setDemo('081200000003')}
-                style={styles.demoBtn}
-              />
-            </View>
+            <Button
+              label="Daftar Sekarang"
+              variant="ghost"
+              size="sm"
+              fullWidth={false}
+              onPress={() => router.replace('/(auth)/register')}
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -146,27 +129,15 @@ const styles = StyleSheet.create({
   },
   errorCard: {
     backgroundColor: colors.semantic.dangerLight,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   submitBtn: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
   },
-  demoBox: {
-    marginTop: spacing.xxxl,
-    paddingTop: spacing.lg,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-  },
-  demoTitle: {
-    marginBottom: spacing.sm,
-  },
-  demoRow: {
+  registerLink: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  demoBtn: {
-    backgroundColor: colors.surface,
+    marginTop: spacing.xl,
   },
 });
-

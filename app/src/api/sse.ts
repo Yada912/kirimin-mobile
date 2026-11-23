@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import EventSource from 'react-native-sse';
 import { useQueryClient } from '@tanstack/react-query';
 import type { RealtimeEvent } from '@kirimin/shared';
-import { API_BASE_URL } from '../utils/config';
+import { getApiBaseUrl } from '../utils/config';
 import { useAuth } from '../auth/AuthContext';
 import { queryKeys } from './hooks/useApi';
 
@@ -20,19 +20,24 @@ export function useRealtimeSubscription() {
       return;
     }
 
-    const sseUrl = `${API_BASE_URL}/events?token=${encodeURIComponent(token)}`;
-    // The server sends *named* events ("event: order.updated"), which EventSource only
-    // delivers to listeners registered under that name — never to 'message'.
-    const es = new EventSource<RealtimeEvent['type']>(sseUrl, {
-      headers: {
-        'ngrok-skip-browser-warning': '1',
-      },
-    });
-    esRef.current = es;
+    let cancelled = false;
+    let es: EventSource<RealtimeEvent['type']> | null = null;
 
-    es.addEventListener('open', () => {
-      // Connected
-    });
+    getApiBaseUrl().then((baseUrl) => {
+      if (cancelled) return;
+      const sseUrl = `${baseUrl}/events?token=${encodeURIComponent(token)}`;
+      // The server sends *named* events ("event: order.updated"), which EventSource only
+      // delivers to listeners registered under that name — never to 'message'.
+      es = new EventSource<RealtimeEvent['type']>(sseUrl, {
+        headers: {
+          'ngrok-skip-browser-warning': '1',
+        },
+      });
+      esRef.current = es;
+
+      es.addEventListener('open', () => {
+        // Connected
+      });
 
     const handle = (event: { data?: string | null }) => {
       try {
@@ -73,12 +78,14 @@ export function useRealtimeSubscription() {
     es.addEventListener('notification.created', handle);
     es.addEventListener('trip.location', handle);
 
-    es.addEventListener('error', (err) => {
+    es.addEventListener('error', () => {
       // Stream drop is gracefully handled; react-query polling remains active fallback
+    });
     });
 
     return () => {
-      es.close();
+      cancelled = true;
+      if (es) es.close();
       esRef.current = null;
     };
   }, [token, queryClient]);

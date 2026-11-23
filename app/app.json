@@ -9,10 +9,30 @@
     "userInterfaceStyle": "light",
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Kirimin memerlukan akses lokasi untuk menentukan titik jemput, titik antar, dan pelacakan rute."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Kirimin memerlukan akses galeri untuk melampirkan foto paket.",
+          "cameraPermission": "Kirimin memerlukan akses kamera untuk mengambil foto paket dan bukti serah terima."
+        }
+      ]
     ],
     "android": {
       "package": "com.kirimin.app",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

@@ -52,8 +52,8 @@ export default function KirimRuteScreen() {
   const [pickerTarget, setPickerTarget] = useState<'pickup' | 'dropoff' | null>(null);
 
   // Recipient info
-  const [recipientName, setRecipientName] = useState('Dewa');
-  const [recipientPhone, setRecipientPhone] = useState('081299990001');
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientPhone, setRecipientPhone] = useState('');
 
   // Handover method
   const [handoverMethod, setHandoverMethod] = useState<HandoverMethod>('meet');

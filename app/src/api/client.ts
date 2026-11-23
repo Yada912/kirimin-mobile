@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { FileSystemUploadType } from 'expo-file-system/legacy';
-import { API_BASE_URL } from '../utils/config';
+import { API_BASE_URL, getApiBaseUrl } from '../utils/config';
 import { getToken, removeToken } from '../auth/storage';
 
 export class ApiError extends Error {
@@ -23,8 +23,9 @@ interface RequestOptions extends RequestInit {
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = await getToken();
+  const baseUrl = await getApiBaseUrl();
 
-  let url = `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  let url = `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
   if (options.params) {
     const searchParams = new URLSearchParams();
     Object.entries(options.params).forEach(([key, val]) => {
@@ -53,18 +54,23 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
 
   let response: Response;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
   try {
     response = await fetch(url, {
       ...options,
       headers,
+      signal: controller.signal,
     });
   } catch (err: any) {
     throw new ApiError(
-      'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+      `Tidak dapat terhubung ke server (${url}). Periksa koneksi Anda.`,
       'network_error',
       0,
       err
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   if (response.status === 401) {

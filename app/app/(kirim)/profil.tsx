@@ -121,7 +121,7 @@ export default function KirimProfilScreen() {
             title="Bantuan & Pusat Informasi"
             subtitle="Pertanyaan umum seputar pengiriman"
             leftIcon={<HelpCircle size={22} color={colors.primary} />}
-            onPress={() => router.push('/placeholder')}
+            onPress={() => router.push({ pathname: '/placeholder', params: { topic: 'bantuan' } })}
             showChevron
           />
           <Divider />
@@ -129,7 +129,7 @@ export default function KirimProfilScreen() {
             title="Ketentuan Layanan & Privasi"
             subtitle="Kebijakan keamanan data Kirimin"
             leftIcon={<FileText size={22} color={colors.primary} />}
-            onPress={() => router.push('/placeholder')}
+            onPress={() => router.push({ pathname: '/placeholder', params: { topic: 'privasi' } })}
             showChevron
           />
         </View>

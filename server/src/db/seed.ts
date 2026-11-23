@@ -82,6 +82,7 @@ export async function seed(db: Db) {
       sizes: string[],
       maxPackages: number,
       maxDetourKm: number,
+      status: 'published' | 'completed' = 'published',
     ) => {
       const u = DEMO_USERS[driver];
       const vehicle = 'vehicle' in u ? u.vehicle : ['motor', '-'];
@@ -91,27 +92,91 @@ export async function seed(db: Db) {
         `INSERT INTO trips (id, series_id, driver_id, name, origin_json, stops_json, destination_json, depart_at, arrive_at, repeat_days_json,
            vehicle_type, vehicle_plate, accepted_sizes_json, max_packages, max_weight_kg, max_detour_km, price_min, price_max,
            status, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, NULL, NULL, 'published', ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, NULL, NULL, ?, ?, ?)`,
         [id, id, ids[driver], name, JSON.stringify(origin), JSON.stringify(stops), JSON.stringify(dest), depart,
           addMinutes(depart, durationMin), JSON.stringify([1, 2, 3, 4, 5]), vehicle[0], vehicle[1], JSON.stringify(sizes),
-          maxPackages, maxDetourKm, now, now],
+          maxPackages, maxDetourKm, status, now, now],
       );
+      return id;
     };
 
     await trip('made', 'Ke Kampus', PLACES.renon, [PLACES.sesetan, PLACES.dewaRuci], PLACES.kampusBukit, 60, 45, ['XS', 'S', 'M'], 3, 2);
-    await trip('komang', 'Ke Kampus', PLACES.panjer, [PLACES.dewaRuci, PLACES.jimbaran], PLACES.kampusBukit, 75, 40, ['XS', 'S'], 2, 1.5);
+    await trip('made', 'Pulang Kampus → Renon', PLACES.kampusBukit, [PLACES.jimbaran, PLACES.sesetan], PLACES.renon, 420, 45, ['XS', 'S'], 3, 2);
+    const komangTripId = await trip('komang', 'Ke Kampus', PLACES.panjer, [PLACES.dewaRuci, PLACES.jimbaran], PLACES.kampusBukit, 75, 40, ['XS', 'S'], 2, 1.5);
     await trip('putu', 'Ke Nusa Dua', PLACES.sanur, [PLACES.bypassNusaDua], PLACES.nusaDua, 90, 35, ['XS', 'S', 'M', 'L'], 5, 3);
+    const pastPutuTripId = await trip('putu', 'Sanur → Bukit Pagi', PLACES.sanur, [PLACES.sesetan], PLACES.kampusBukit, -180, 40, ['XS', 'S', 'M'], 4, 2.5, 'completed');
 
-    // One open request from Ayu, so a driver's inbox (D3) isn't empty.
-    const orderId = newId();
+    // 1. Open request from Ayu, so a driver's inbox (D3) isn't empty.
+    const openOrderId = newId();
     await tx.run(
       `INSERT INTO orders (id, code, sender_id, status, category, size, weight_class, handling_json, notes, pickup_json, dropoff_json,
          recipient_name, recipient_phone, deliver_by, handover_method, payment_method, payment_status, handover_code, created_at, updated_at)
        VALUES (?, ?, ?, 'open', 'Dokumen', 'XS', 'lt1', '["keep_dry"]', 'Map berisi berkas KRS', ?, ?, 'Dewa', '081299990000', ?, 'meet', 'cash', 'unpaid', ?, ?, ?)`,
-      [orderId, orderCode(), ids.ayu, JSON.stringify(PLACES.tukadBadung), JSON.stringify(PLACES.gedungFT), addMinutes(now, 240), handoverCode(), now, now],
+      [openOrderId, orderCode(), ids.ayu, JSON.stringify(PLACES.tukadBadung), JSON.stringify(PLACES.gedungFT), addMinutes(now, 240), handoverCode(), now, now],
     );
     await tx.run(`INSERT INTO order_events (id, order_id, status, actor_id, note, created_at) VALUES (?, ?, 'open', ?, NULL, ?)`, [
-      newId(), orderId, ids.ayu, now,
+      newId(), openOrderId, ids.ayu, now,
     ]);
+
+    // 2. Direct requested order from Wayan to Komang
+    const reqOrderId = newId();
+    await tx.run(
+      `INSERT INTO orders (id, code, sender_id, driver_id, trip_id, status, category, size, weight_class, handling_json, notes, pickup_json, dropoff_json,
+         recipient_name, recipient_phone, deliver_by, handover_method, fee, service_fee, total, detour_km,
+         payment_method, payment_status, handover_code, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'requested', 'Makanan', 'S', '1to3', '["this_side_up"]', 'Titip kotak bekal, jangan dimiringkan', ?, ?, 'Raka', '081288887777', ?, 'meet', 11000, 1000, 12000, 0.4, 'qris', 'paid', ?, ?, ?)`,
+      [reqOrderId, orderCode(), ids.wayan, ids.komang, komangTripId, JSON.stringify(PLACES.panjer), JSON.stringify(PLACES.jimbaran), addMinutes(now, 150), handoverCode(), now, now],
+    );
+    await tx.run(`INSERT INTO order_events (id, order_id, status, actor_id, note, created_at) VALUES (?, ?, 'requested', ?, 'Menunggu konfirmasi pengemudi', ?)`, [
+      newId(), reqOrderId, ids.wayan, now,
+    ]);
+
+    // 3. Completed & rated order from Wayan with Putu (shows rich Aktivitas, Riwayat, Chat, & Wallet)
+    const doneOrderId = newId();
+    const pastTime = addMinutes(now, -140);
+    await tx.run(
+      `INSERT INTO orders (id, code, sender_id, driver_id, trip_id, status, category, size, weight_class, handling_json, notes, pickup_json, dropoff_json,
+         recipient_name, recipient_phone, deliver_by, handover_method, fee, service_fee, total, detour_km,
+         payment_method, payment_status, handover_code, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'delivered', 'Elektronik', 'S', 'lt1', '["fragile","keep_dry"]', 'Charger laptop dalam pouch biru', ?, ?, 'Sinta', '081277776666', ?, 'meet', 12000, 1000, 13000, 0.8, 'ewallet', 'paid', ?, ?, ?)`,
+      [doneOrderId, orderCode(), ids.wayan, ids.putu, pastPutuTripId, JSON.stringify(PLACES.sanur), JSON.stringify(PLACES.gedungFT), addMinutes(now, -90), handoverCode(), addMinutes(now, -200), pastTime],
+    );
+    await tx.run(`INSERT INTO order_events (id, order_id, status, actor_id, note, created_at) VALUES (?, ?, 'delivered', ?, 'Paket berhasil diserahkan', ?)`, [
+      newId(), doneOrderId, ids.putu, pastTime,
+    ]);
+    await tx.run(
+      `INSERT INTO ratings (id, order_id, from_user_id, to_user_id, stars, tags_json, comment, created_at) VALUES (?, ?, ?, ?, 5, '["Tepat Waktu","Paket Terjaga Aman"]', 'Pengiriman cepat dan aman sampai tujuan.', ?)`,
+      [newId(), doneOrderId, ids.wayan, ids.putu, pastTime],
+    );
+    await tx.run(
+      `INSERT INTO wallet_entries (id, user_id, order_id, type, amount, status, note, created_at) VALUES (?, ?, ?, 'earning', 12000, 'completed', 'Ongkos antar pesanan selesai', ?)`,
+      [newId(), ids.putu, doneOrderId, pastTime],
+    );
+    await tx.run(
+      `INSERT INTO messages (id, order_id, sender_id, body, created_at) VALUES (?, ?, ?, 'Halo Pak Putu, paket sudah siap di lobi ya.', ?)`,
+      [newId(), doneOrderId, ids.wayan, addMinutes(now, -170)],
+    );
+    await tx.run(
+      `INSERT INTO messages (id, order_id, sender_id, body, created_at) VALUES (?, ?, ?, 'Baik, saya sudah tiba di titik antar dan paket sudah diterima Sinta.', ?)`,
+      [newId(), doneOrderId, ids.putu, pastTime],
+    );
+
+    // 4. Saved places (for Komang) & welcome notifications
+    await tx.run(
+      `INSERT INTO saved_places (id, user_id, kind, label, address, lat, lng, created_at, updated_at) VALUES (?, ?, 'home', 'Rumah Panjer', ?, ?, ?, ?, ?)`,
+      [newId(), ids.komang, PLACES.panjer.address ?? null, PLACES.panjer.lat, PLACES.panjer.lng, now, now],
+    );
+    await tx.run(
+      `INSERT INTO saved_places (id, user_id, kind, label, address, lat, lng, created_at, updated_at) VALUES (?, ?, 'campus', 'Kampus FT Unud', ?, ?, ?, ?, ?)`,
+      [newId(), ids.komang, PLACES.gedungFT.address ?? null, PLACES.gedungFT.lat, PLACES.gedungFT.lng, now, now],
+    );
+    await tx.run(
+      `INSERT INTO notifications (id, user_id, type, title, body, data_json, created_at) VALUES (?, ?, 'order.delivered', 'Paket Selesai Diantar', 'Pengiriman ke Gedung FT telah diterima oleh Sinta.', ?, ?)`,
+      [newId(), ids.wayan, JSON.stringify({ orderId: doneOrderId }), pastTime],
+    );
+    await tx.run(
+      `INSERT INTO notifications (id, user_id, type, title, body, data_json, created_at) VALUES (?, ?, 'order.open', 'Ada Permintaan Titipan Searah', 'Paket Dokumen (XS) dari Jl. Tukad Badung menuju Gedung FT menunggu pengemudi.', ?, ?)`,
+      [newId(), ids.made, JSON.stringify({ orderId: openOrderId }), now],
+    );
   });
 }
