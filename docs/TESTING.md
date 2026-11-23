@@ -1,11 +1,12 @@
 # Testing Kirimin
 
-There are three layers. Each one catches a different kind of bug, and they go from fastest to most realistic.
+There are four layers. Each one catches a different kind of bug, and they go from fastest to most realistic.
 
 | Layer | Where | Needs | Time | Catches |
 |---|---|---|---|---|
 | **1. Server tests** | `server/test/` | Node | ~2 s | Business rules: matching, pricing, the order state machine, permissions |
 | **2. App contract tests** | `app/tests/contract/` | Node (no emulator, no `npm install`) | ~2 s | The UI and the server disagreeing: wrong endpoint, wrong request body, a link to a screen that doesn't exist, realtime not wired, formatting bugs |
+| **2b. Web end-to-end** | `app/e2e/web/full_flow.py` (Playwright) | backend + `expo start --web` + Python | ~1 min | The whole send → accept → drive → handover (wrong code refused, right code accepted) → rate flow in two browsers, without an emulator |
 | **3. End-to-end UI tests** | `app/e2e/` (Maestro) | Android emulator + backend + Maestro | ~3–5 min | What a real user sees and taps on the phone: screens render, buttons do the right thing, the whole send → deliver → rate flow works |
 
 Plus `cd app && npm run typecheck` (TypeScript), which catches screens reading fields the API doesn't return.
@@ -14,8 +15,18 @@ Plus `cd app && npm run typecheck` (TypeScript), which catches screens reading f
 
 ```powershell
 cd server
-npm test
+npm test               # 51 tests, in-memory SQLite
+npm run test:libsql    # the same features through the Turso adapter (fake local libSQL server)
 ```
+
+`test/algorithm.test.ts` holds property tests for the core rules. They run thousands of random routes and packages through the same functions the API uses, so a broken rule shows up even if no example happens to hit it:
+
+- **Matching (`findBestDetour`):** the detour is never negative, the pickup always comes before the drop-off, and the chosen insertion is the cheapest legal one (checked against brute force). A package on the route costs ~0 km, and a bigger detour allowance never loses a match.
+- **Pricing:** fees are multiples of Rp 500 within Rp 5.000–25.000. A longer trip, a bigger detour or a bigger package never gets cheaper. A driver's own price band always wins, and the "kira-kira" range brackets the real quote.
+- **`evaluateTrip`** (shared by search, the driver inbox and accept): rejects inactive trips, wrong sizes, full trips, too-far packages and missed deadlines. The ETA never puts the drop-off before the pickup.
+- **Order flow:** nothing leaves a final state, only the driver moves a package, and delivery is reachable from every active status.
+
+The seeded random generator makes a failure reproducible. Breaking the insertion loop or the price rounding on purpose makes these tests fail.
 
 ## 2. App contract tests (run these after every change to a screen)
 
@@ -31,6 +42,19 @@ These start the real server in memory, then check the app's source code and data
 | `wiring.test.ts` | Scans every `api.get/post/…` call in the app and checks that each endpoint exists on the server. Checks that every `router.push(...)` target has a matching screen file. Checks that the app subscribes to every realtime event the server sends. |
 | `kirim-angkut-flow.test.ts` | Runs the MVP flow (S1 → S5, S6, S7, D3 → D5, X2, X3) using **the same functions the screens use** to build requests (`src/features/kirim/draft.ts`), with params encoded exactly the way the screens pass them. It also checks that every size and category offered on S1 is accepted by the server. |
 | `format.test.ts` | Rupiah, distance, time and similarity formatting |
+
+`serverUrl.test.ts` checks the "Alamat server" field turns whatever people type (`192.168.1.23`, `…trycloudflare.com/`) into a working address.
+
+### 2b. Web end-to-end (no emulator)
+
+```powershell
+cd server; npm run db:reset; npm start                 # terminal 1
+cd app; npx expo start --web --port 8081               # terminal 2
+pip install playwright; python -m playwright install chromium
+python app/e2e/web/full_flow.py                        # terminal 3, screenshots in e2e-web-shots/
+```
+
+Two browsers log in as Wayan and Made and drive the whole flow through the real screens. A wrong handover code must be refused, and the sender's tracking must turn to Selesai live, over realtime.
 
 **Rule for future screens:** if a screen builds a request body, put that code in a pure function under `src/features/` (no React Native imports) and add a case to the flow test. That's what makes it testable without an emulator.
 

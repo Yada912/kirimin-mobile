@@ -7,7 +7,7 @@ tags: [mvp]
 - runFlow:
     file: ../subflows/login_as.yaml
     env:
-      DEMO_BUTTON: "Made \\(pengemudi\\)"
+      DEMO_BUTTON: "Made"
       HOME_TEXT: "Halo, Made"
 
 # Beranda → active route card → D3 Permintaan Masuk

@@ -110,3 +110,17 @@ test('a wrong auth token is reported clearly', async () => {
   const bad = openLibsql(hrana.url, 'wrong');
   await assert.rejects(bad.all('SELECT 1'), /401/);
 });
+
+test('db:reset:turso wipe: drops every table so migrations + seed can run again from nothing', async () => {
+  const { dropAllTables } = await import('../src/db/wipe.ts');
+  await migrate(db);
+  const dropped = await dropAllTables(db);
+  assert.ok(dropped.includes('users') && dropped.includes('orders') && dropped.includes('_migrations'), dropped.join());
+  const left = await db.all("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'");
+  assert.deepEqual(left, []);
+  const ran = await migrate(db);
+  assert.ok(ran.length >= 3, ran.join());
+  await seed(db);
+  const users = await db.get<{ n: number }>('SELECT COUNT(*) AS n FROM users');
+  assert.equal(users!.n, 5);
+});

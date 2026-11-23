@@ -2,7 +2,7 @@
   "name": "@kirimin/server",
   "version": "0.1.0",
   "private": true,
-  "description": "Kirimin API — zero-dependency Node.js server (node:http + node:sqlite)",
+  "description": "Kirimin API \u2014 zero-dependency Node.js server (node:http + node:sqlite)",
   "type": "module",
   "engines": {
     "node": ">=22.18.0"
@@ -14,7 +14,8 @@
     "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.ts\"",
     "verify:hosting": "node --disable-warning=ExperimentalWarning src/verifyHosting.ts",
     "test:libsql": "TEST_DB=libsql node --disable-warning=ExperimentalWarning --test test/features.test.ts test/libsql.test.ts",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "db:reset:turso": "node --disable-warning=ExperimentalWarning src/db/reset.ts --turso"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

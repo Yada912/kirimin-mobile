@@ -10,7 +10,7 @@ appId: com.kirimin.app
     timeout: 60000
 - tapOn: "Saya sudah punya akun"
 - extendedWaitUntil:
-    visible: "Coba pakai akun contoh"
+    visible: "Coba pakai akun contoh.*"
     timeout: 10000
 - tapOn: "${DEMO_BUTTON}"
 - extendedWaitUntil:

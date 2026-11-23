@@ -6,7 +6,7 @@ tags: [mvp]
 - runFlow:
     file: ../subflows/login_as.yaml
     env:
-      DEMO_BUTTON: "Wayan \\(pengirim\\)"
+      DEMO_BUTTON: "Wayan"
       HOME_TEXT: "Mau kirim ke mana\\?"
 - tapOn: "Aktivitas"
 - tapOn: "Selesai"
